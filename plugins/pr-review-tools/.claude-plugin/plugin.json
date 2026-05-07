@@ -1,0 +1,8 @@
+{
+  "name": "pr-review-tools",
+  "description": "AI-driven pull request review skills. Calls into agent-tool-pr-reviewer (separate repo, designed in its own spec).",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}
