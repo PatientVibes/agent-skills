@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agent-skills",
+  "description": "Chris Moore's personal skills marketplace for agent development workflows",
+  "owner": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "pr-review-tools",
+      "description": "Skills for AI-driven pull request review (paired with agent-tool-pr-reviewer CLI)",
+      "author": { "name": "Chris Moore" },
+      "source": "./plugins/pr-review-tools",
+      "category": "code-review"
+    }
+  ]
+}
