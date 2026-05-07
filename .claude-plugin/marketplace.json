@@ -10,7 +10,7 @@
     {
       "name": "pr-review-tools",
       "description": "Skills for AI-driven pull request review (paired with agent-tool-pr-reviewer CLI)",
-      "author": { "name": "Chris Moore" },
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
       "source": "./plugins/pr-review-tools",
       "category": "code-review"
     }
