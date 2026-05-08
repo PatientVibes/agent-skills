@@ -21,7 +21,7 @@ From any directory in Claude Code:
 
 ```
 /plugin marketplace add D:/agent-skills
-/plugin install pr-review-tools@agent-skills
+/plugin install pr-review-tools@patientvibes-skills
 ```
 
 `/plugin marketplace add` registers this repo as a marketplace. After that,

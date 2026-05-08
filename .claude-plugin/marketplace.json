@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "agent-skills",
+  "name": "patientvibes-skills",
   "description": "Chris Moore's personal skills marketplace for agent development workflows",
   "owner": {
     "name": "Chris Moore",
