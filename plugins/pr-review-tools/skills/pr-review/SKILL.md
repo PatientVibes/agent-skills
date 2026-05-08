@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Run an AI-driven review on the current branch's PR via the agent-tool-pr-reviewer CLI. Use when the user asks to review a PR, audit a branch before merging, or critique their own changes before opening a PR.
+description: Run an AI-driven review on the current branch's diff (vs its base ref) via the agent-tool-pr-reviewer CLI. Use when the user asks to review a PR, audit a branch before merging, or critique their own changes before opening a PR.
 ---
 
 # pr-review
