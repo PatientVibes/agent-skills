@@ -1,0 +1,8 @@
+{
+  "name": "csd-form-analysis",
+  "description": "Skill for analyzing SS&C AWD CSD binary forms with a LangGraph ReAct agent. Captures the system prompt, ground rules (Chorus system fields vs LOB fields, accuracy over speculation), and AWD reference knowledge as a reusable procedure consumed by agent-harness-chorus-csd-analyzer.",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}
