@@ -13,6 +13,13 @@
       "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
       "source": "./plugins/pr-review-tools",
       "category": "code-review"
+    },
+    {
+      "name": "csd-form-analysis",
+      "description": "Skill for analyzing SS&C AWD CSD binary forms with a LangGraph ReAct agent (paired with agent-harness-chorus-csd-analyzer)",
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
+      "source": "./plugins/csd-form-analysis",
+      "category": "reference-agents"
     }
   ]
 }
