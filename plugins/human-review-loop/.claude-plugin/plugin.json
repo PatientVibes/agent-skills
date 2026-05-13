@@ -1,0 +1,8 @@
+{
+  "name": "human-review-loop",
+  "description": "Pattern: gate agent output by confidence + route low-confidence items to a human review queue + feed corrections back into the agent's learning wiki. Used by card-extractor; pairs with agent-tool-review-queue.",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}

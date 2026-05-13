@@ -34,6 +34,13 @@
       "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
       "source": "./plugins/verification-retry-loop",
       "category": "patterns"
+    },
+    {
+      "name": "human-review-loop",
+      "description": "Pattern: gate output by confidence, route low-confidence items to a queue, feed corrections back as wiki rules. Used by card-extractor; pairs with agent-tool-review-queue + agent-tool-knowledge-wiki.",
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
+      "source": "./plugins/human-review-loop",
+      "category": "patterns"
     }
   ]
 }
