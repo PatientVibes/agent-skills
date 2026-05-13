@@ -1,0 +1,8 @@
+{
+  "name": "vlm-card-extraction-prompts",
+  "description": "Six production-tuned VLM prompts for ID card / insurance card / structured-document extraction from scanned PDFs: DETECTION, VERIFICATION, EXTRACTION (with/without wiki context), EXTRACTION_RETRY, AUDIT.",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}

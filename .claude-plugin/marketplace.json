@@ -20,6 +20,13 @@
       "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
       "source": "./plugins/csd-form-analysis",
       "category": "reference-agents"
+    },
+    {
+      "name": "vlm-card-extraction-prompts",
+      "description": "Six production-tuned VLM prompts for scanned-document extraction (paired with agent-harness-card-extractor)",
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
+      "source": "./plugins/vlm-card-extraction-prompts",
+      "category": "reference-agents"
     }
   ]
 }
