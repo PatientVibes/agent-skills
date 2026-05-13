@@ -1,6 +1,6 @@
 # EXTRACTION_WITH_CONTEXT prompt
 
-**Placeholders:** `{wiki_context}` — a **compact** rules summary for the known issuer/card_type pair (issuer name, card type, regex patterns, required fields). Should be the output of `format_rules_for_injection(IssuerRules)`, NOT the entire wiki markdown — injecting full markdown wastes tokens.
+**Placeholders:** `{wiki_context}` — a **compact** rules summary for the known issuer/card_type pair (issuer name, card type, regex patterns, required fields). Should be built from `wiki.get_rules(entity_key, sub_kind)` (the raw YAML frontmatter as a dict from the `knowledge_wiki` tool) and stringified at the prompt-assembly site, NOT the entire wiki markdown — injecting full markdown wastes tokens.
 
 **Output schema:** `CardExtraction` Pydantic model. Same shape as `EXTRACTION` (`card_type`, `insurance`, `government`, `confidence`, `issuer_hint`); missing/unreadable values must be the literal string `"NONE"`.
 
