@@ -27,6 +27,13 @@
       "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
       "source": "./plugins/vlm-card-extraction-prompts",
       "category": "reference-agents"
+    },
+    {
+      "name": "verification-retry-loop",
+      "description": "Pattern: extract → verify → retry-once-with-feedback. Used by chorus-csd-analyzer and card-extractor harnesses.",
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
+      "source": "./plugins/verification-retry-loop",
+      "category": "patterns"
     }
   ]
 }

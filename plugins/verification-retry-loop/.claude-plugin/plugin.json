@@ -1,0 +1,8 @@
+{
+  "name": "verification-retry-loop",
+  "description": "The 'extract → verify → retry once with feedback' pattern for structured LLM output. Bounded retries; deterministic verifier; second attempt accepted unconditionally. Used by chorus-csd-analyzer and card-extractor.",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}
