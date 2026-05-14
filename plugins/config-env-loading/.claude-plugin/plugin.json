@@ -1,0 +1,8 @@
+{
+  "name": "config-env-loading",
+  "description": "Convention for loading API keys + secrets in agent-tool-* / agent-harness-* CLIs. Tool reads `~/.config/<tool-name>/env` (mode 600) as a fallback when the env var isn't already set. Pairs cleanly with 1Password `op item get` workflows.",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}
