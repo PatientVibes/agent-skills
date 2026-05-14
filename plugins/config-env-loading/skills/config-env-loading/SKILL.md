@@ -32,7 +32,7 @@ Skip when:
 - File `0600`.
 - On Windows, file ACLs achieve the same effect via SecretManagement; the cross-platform default mode (`0o600`) is benign on NTFS even though it's not enforced.
 
-**File format:** a minimal subset of shell `source`-able lines:
+**File format:** the loader is a minimal env-file reader, NOT a `source <file>` replacement. Lines look like:
 
 ```bash
 # Full-line comments allowed (must start with #)
@@ -42,7 +42,11 @@ export OTHER_KEY="value with spaces"
 
 The loader handles: blank lines, full-line `#` comments, `export ` prefix, and one pair of surrounding single/double quotes on the value.
 
-**Not supported** (out of scope — escape to a proper shell script if you need them): inline comments after a value (`KEY=value # comment` will include ` # comment` in the value), process substitution, variable interpolation, multi-line values, heredocs.
+**Not supported** (out of scope — escape to a proper shell script if you need them):
+
+- Inline comments after a value (`KEY=value # comment` will include ` # comment` in the value).
+- Duplicate keys with last-wins semantics. The loader is **first-wins within the file**; deduplicate before reading if you want last-wins.
+- Process substitution, variable interpolation (`KEY=$OTHER`), multi-line values, heredocs.
 
 ## The pattern
 
@@ -54,17 +58,19 @@ from pathlib import Path
 
 
 def _load_env_file_if_present(tool_name: str, required_key: str) -> None:
-    """Source ~/.config/<tool_name>/env if `required_key` isn't already set.
+    """Load ~/.config/<tool_name>/env into os.environ if `required_key` is unset.
 
-    Mirrors a minimal `source <file>` for `KEY=value` and `export KEY=value`
-    lines. Handles a single pair of surrounding quotes, `#` comments, and
-    blank lines. Anything more exotic is out of scope.
+    Minimal env-file reader for `KEY=value` and `export KEY=value` lines. Handles
+    a single pair of surrounding quotes, full-line `#` comments, and blank lines.
+    This is NOT a `source <file>` replacement — see "Not supported" above.
 
     Invariants:
       - No-op if `required_key` is already in the environment OR the file
         doesn't exist.
       - Pre-existing env vars are NEVER overwritten (shell-exported values
         always win, for ALL keys — not just `required_key`).
+      - **First-wins within the file** for duplicate keys. (Real shell `source`
+        is last-wins. If you want last-wins, deduplicate the file before reading.)
       - Bad lines are silently skipped. The CLI's downstream KeyError on
         the missing key is the actionable error.
     """
