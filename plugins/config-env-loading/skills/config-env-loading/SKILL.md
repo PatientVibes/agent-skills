@@ -55,12 +55,16 @@ def _load_env_file_if_present(tool_name: str, required_key: str) -> None:
     """Source ~/.config/<tool_name>/env if `required_key` isn't already set.
 
     Mirrors a minimal `source <file>` for `KEY=value` and `export KEY=value`
-    lines. Handles single/double-quoted values, `#` comments, and blank lines.
-    Anything more exotic is out of scope.
+    lines. Handles a single pair of surrounding quotes, `#` comments, and
+    blank lines. Anything more exotic is out of scope.
 
-    No-op if `required_key` is already in the environment OR the file doesn't
-    exist. Never raises - bad lines are silently skipped (the CLI's downstream
-    `KeyError` on the missing key is the actionable error).
+    Invariants:
+      - No-op if `required_key` is already in the environment OR the file
+        doesn't exist.
+      - Pre-existing env vars are NEVER overwritten (shell-exported values
+        always win, for ALL keys — not just `required_key`).
+      - Bad lines are silently skipped. The CLI's downstream KeyError on
+        the missing key is the actionable error.
     """
     if os.environ.get(required_key):
         return
@@ -73,9 +77,18 @@ def _load_env_file_if_present(tool_name: str, required_key: str) -> None:
             continue
         if line.startswith("export "):
             line = line[len("export "):]
-        if "=" in line:
-            k, _, v = line.partition("=")
-            os.environ[k.strip()] = v.strip().strip("'").strip('"')
+        if "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        k = k.strip()
+        if not k or k in os.environ:
+            # Don't clobber pre-set env vars — caller's shell wins.
+            continue
+        v = v.strip()
+        # Strip ONE pair of matching surrounding quotes (not all of them).
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in ("'", '"'):
+            v = v[1:-1]
+        os.environ[k] = v
 
 
 def main() -> int:
