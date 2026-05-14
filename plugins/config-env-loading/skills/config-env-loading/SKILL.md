@@ -89,7 +89,14 @@ def _load_env_file_if_present(tool_name: str, required_key: str) -> None:
             continue
         k, _, v = line.partition("=")
         k = k.strip()
-        if not k or k in os.environ:
+        # POSIX env-var name: [A-Za-z_][A-Za-z0-9_]*. Skip anything else
+        # (catches lines like `MY KEY=value` that would otherwise set a
+        # space-containing name unusable by subprocesses).
+        if not k or not (k[0].isalpha() or k[0] == "_") or not all(
+            c.isalnum() or c == "_" for c in k
+        ):
+            continue
+        if k in os.environ:
             # Don't clobber pre-set env vars — caller's shell wins.
             continue
         v = v.strip()
