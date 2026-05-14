@@ -21,6 +21,4 @@ The loader is ~20 lines of zero-dependency Python. Vendoring is cheaper than a s
 
 ## Provenance
 
-Convention proved out in `agent-tool-llm-proofreader` (2026-05-09). Documented as a skill 2026-05-14 once the second consumer (anticipated: kindle-pipeline subprocess orchestrator, then any future API-key-needing tool) made the pattern worth naming.
-
-See `D:/ai-agents/todo.md` section A2 history and `[[project_patientvibes_personal_org]]` memory.
+Convention proved out in [`agent-tool-llm-proofreader`](https://github.com/PatientVibes/agent-tool-llm-proofreader) (2026-05-09 migration). Documented as a skill 2026-05-14 once the second consumer (anticipated: kindle-pipeline subprocess orchestrator, then any future API-key-needing tool) made the pattern worth naming.
