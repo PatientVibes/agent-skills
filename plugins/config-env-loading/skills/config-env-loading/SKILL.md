@@ -35,12 +35,14 @@ Skip when:
 **File format:** a minimal subset of shell `source`-able lines:
 
 ```bash
-# Comments allowed
+# Full-line comments allowed (must start with #)
 KEY=value
 export OTHER_KEY="value with spaces"
 ```
 
-The loader handles: blank lines, `#` comments, `export ` prefix, single/double-quoted values. Anything more exotic (process substitution, variable interpolation, multi-line) is out of scope — escape it to a proper shell script in a different location.
+The loader handles: blank lines, full-line `#` comments, `export ` prefix, and one pair of surrounding single/double quotes on the value.
+
+**Not supported** (out of scope — escape to a proper shell script if you need them): inline comments after a value (`KEY=value # comment` will include ` # comment` in the value), process substitution, variable interpolation, multi-line values, heredocs.
 
 ## The pattern
 
