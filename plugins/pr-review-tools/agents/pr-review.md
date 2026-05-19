@@ -43,9 +43,12 @@ If `metadata.schema_version` is `"1"` or missing, return failure: the run was pr
 
 ## Return structured summary
 
-Emit a single response to the parent agent containing:
+Emit a single response to the parent agent containing the structured summary
+below. **Quote the `evidence` field inside a five-backtick fence (`\`\`\`\`\`…\`\`\`\`\``)
+so that any triple-backtick content inside the evidence (common when reviewing
+markdown or code-block-heavy files) does not prematurely close the fence.**
 
-```
+`````
 Exit: <code>
 Blockers: <count>   ← from findings.json severity == "blocker"
 High:     <count>
@@ -59,12 +62,15 @@ Run dir: <path>
   title: <one line>
   category: bug | project_rule(<rule_id>)
   severity: <severity>
-  evidence: ```
-    <verbatim from findings.json evidence field — DO NOT paraphrase>
-  ```
+  evidence:
+    `````
+    <verbatim from findings.json evidence field — DO NOT paraphrase. Use a
+    five-backtick fence as shown so triple-backtick content inside the
+    evidence does not break the outer fence.>
+    `````
   description: <one paragraph from findings.json>
   suggested_fix: <if present>
-```
+`````
 
 Then end with: `Artifacts: <path>/findings.json, <path>/review-output.md`.
 
