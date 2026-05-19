@@ -1,0 +1,8 @@
+{
+  "name": "repo-documentation-governance",
+  "description": "Repo documentation cleanup and AI-agent instruction consolidation (AGENTS.md / CLAUDE.md / GEMINI.md / Copilot). Removes stale artifacts and reduces drift without changing application behavior. Output is a PR, not a merge.",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}

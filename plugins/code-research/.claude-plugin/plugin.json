@@ -1,0 +1,8 @@
+{
+  "name": "code-research",
+  "description": "Gemini CLI as a second-opinion / large-context research assistant for the current repo. Spawn `gemini -p` as a non-interactive child process for whole-codebase reasoning that doesn't fit in Claude's working context.",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}

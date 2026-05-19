@@ -1,0 +1,82 @@
+[
+  {
+    "query": "We're cutting a release on Friday and the docs are a mess - half the TODOs in HANDOFF.md are already done, ROADMAP.md still mentions features we shipped six months ago, and there are three different files in the root called handoff-final.md, handoff-v2-FINAL.md, and handoff-actually-final.md. Need to clean this up before the tag.",
+    "should_trigger": true
+  },
+  {
+    "query": "i have a CLAUDE.md, AGENTS.md, and GEMINI.md in this repo and they all say slightly different things about how to run the tests and they all have different rules about commits. need to pick a source of truth and make the rest point to it",
+    "should_trigger": true
+  },
+  {
+    "query": "Our README quickstart says `npm run start` but that script doesn't exist in package.json anymore. There's also a whole section about a Redis cache we ripped out last year. Can you audit the README against the actual repo and fix the drift?",
+    "should_trigger": true
+  },
+  {
+    "query": "im in a monorepo with 8 packages under packages/. each one has its own README and theyve all drifted from the actual code. we renamed two services last quarter (notifications -> messaging, billing -> payments) and the old names still show up in like a dozen places. wanna do a cleanup pass before the new hires start",
+    "should_trigger": true
+  },
+  {
+    "query": "Can you audit the docs/ directory in our repo? I think there's a lot of cruft in there - planning docs from 2023, screenshots from the v1 UI we replaced, a folder called docs/old-migrations/ that I'm pretty sure nothing references anymore. Figure out what's still relevant and what should be deleted or archived.",
+    "should_trigger": true
+  },
+  {
+    "query": "documentation governance pass please. README, agent instruction files, the handoff doc, the planning notes - the works. produce a PR I can review, dont merge anything",
+    "should_trigger": true
+  },
+  {
+    "query": "the AGENTS.md i wrote myself has gotten huge and i think a bunch of it duplicates the actual code and CI config. also there's an old CLAUDE.md that contradicts it in a few places. consolidate them down to what actually matters and have one of them be the canonical file",
+    "should_trigger": true
+  },
+  {
+    "query": "new dev couldnt get the project running from the README alone, took them 2 hours of slack pings to figure out the env setup. plus we have 4 different .env.example files at various paths and im not sure which one is current. fix the onboarding docs",
+    "should_trigger": true
+  },
+  {
+    "query": "this repo has zero documentation - no README, no AGENTS.md, no architecture notes, nothing. i inherited it from a contractor who's gone. can you set up the standard documentation files based on what you can figure out from the code and ci?",
+    "should_trigger": true
+  },
+  {
+    "query": "noticed our docs/ARCHITECTURE.md links to like 12 other markdown files and half of them 404. plus the architecture description references a `MetricsCollector` service that we deleted in Q1. think the whole docs folder needs an audit",
+    "should_trigger": true
+  },
+  {
+    "query": "audit my CLAUDE.md and tell me what's outdated or vague. just the one file - it's at the repo root, called CLAUDE.md",
+    "should_trigger": false
+  },
+  {
+    "query": "this is a fresh repo, no CLAUDE.md yet. initialize a CLAUDE.md with the codebase basics so Claude Code has context next time i open this",
+    "should_trigger": false
+  },
+  {
+    "query": "add a 'Configuration' section to my README under the 'Quick Start' section explaining the OAUTH_CLIENT_ID and OAUTH_SECRET env vars - they're documented in src/config/oauth.ts",
+    "should_trigger": false
+  },
+  {
+    "query": "our docs build is failing in github actions, mkdocs is throwing 'config file at mkdocs.yml not found' even though it's clearly there. can you debug what's wrong with the workflow",
+    "should_trigger": false
+  },
+  {
+    "query": "generate JSDoc comments for all the exported functions in src/utils/ - they currently have no inline documentation",
+    "should_trigger": false
+  },
+  {
+    "query": "review the PR i just pushed - branch is `feature/payment-webhooks`. focus on the webhook signature verification logic in src/webhooks/stripe.ts",
+    "should_trigger": false
+  },
+  {
+    "query": "Generate a CHANGELOG entry for v2.4.0 based on the merge commits between v2.3.0 and HEAD. Include sections for Added/Changed/Fixed.",
+    "should_trigger": false
+  },
+  {
+    "query": "translate our README.md to brazilian portuguese and save it as README.pt-BR.md",
+    "should_trigger": false
+  },
+  {
+    "query": "set up a Docusaurus docs site under docs/site/ for our public-facing API documentation - this will eventually deploy to docs.example.com",
+    "should_trigger": false
+  },
+  {
+    "query": "help me write a better git commit message for the changes i just staged. they touch a bunch of files in src/auth/ and i want a clear summary",
+    "should_trigger": false
+  }
+]

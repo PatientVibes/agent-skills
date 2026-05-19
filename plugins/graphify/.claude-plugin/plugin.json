@@ -1,0 +1,8 @@
+{
+  "name": "graphify",
+  "description": "Turn any folder of files (code, docs, papers, images, videos) into a navigable knowledge graph with community detection and an honest audit trail. Outputs interactive HTML, GraphRAG-ready JSON, and a plain-language report.",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}
