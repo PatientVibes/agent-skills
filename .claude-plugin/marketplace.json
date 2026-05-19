@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "pr-review-tools",
-      "description": "Skills for AI-driven pull request review (paired with agent-tool-pr-reviewer CLI)",
+      "description": "AI-driven PR review — `pr-review` skill for user-invoked review of the current branch, `pr-review` subagent for programmatic dispatch by other agents (e.g. ship). Both wrap the agent-tool-pr-reviewer CLI.",
       "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
       "source": "./plugins/pr-review-tools",
       "category": "code-review"
@@ -48,6 +48,41 @@
       "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
       "source": "./plugins/config-env-loading",
       "category": "patterns"
+    },
+    {
+      "name": "code-research",
+      "description": "Gemini CLI as a second-opinion / large-context research assistant for the current repo. Spawns `gemini -p` for whole-codebase reasoning that doesn't fit in Claude's working context.",
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
+      "source": "./plugins/code-research",
+      "category": "agent-collaboration"
+    },
+    {
+      "name": "co-plan",
+      "description": "Iterative Claude ↔ Gemini collaborative planning loop. Claude drafts, Gemini critiques, Claude revises — repeat until convergence.",
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
+      "source": "./plugins/co-plan",
+      "category": "agent-collaboration"
+    },
+    {
+      "name": "graphify",
+      "description": "Turn any folder of files (code, docs, papers, images, videos) into a navigable knowledge graph with community detection and audit trail. Outputs interactive HTML, GraphRAG-ready JSON, and a plain-language report.",
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
+      "source": "./plugins/graphify",
+      "category": "knowledge-graph"
+    },
+    {
+      "name": "ship",
+      "description": "Subagent driving an approved change from branch → PR → external review → merge. Codex primary; falls back to dispatching the `pr-review` subagent (no opencode/OpenRouter dependency). Triggered only after the user has approved a plan and authorized full automation through merge.",
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
+      "source": "./plugins/ship",
+      "category": "automation"
+    },
+    {
+      "name": "repo-documentation-governance",
+      "description": "Subagent for repo documentation cleanup and AI-agent instruction consolidation (AGENTS.md / CLAUDE.md / GEMINI.md / Copilot). Nine-phase workflow that scales to the task. Removes stale artifacts without changing application behavior. Output is a PR, not a merge.",
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
+      "source": "./plugins/repo-documentation-governance",
+      "category": "automation"
     }
   ]
 }

@@ -1,0 +1,8 @@
+{
+  "name": "co-plan",
+  "description": "Iterative Claude ↔ Gemini collaborative planning loop for non-trivial changes. Claude drafts, Gemini critiques, Claude revises, repeat until convergence.",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}

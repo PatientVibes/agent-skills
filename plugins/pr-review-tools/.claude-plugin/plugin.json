@@ -1,6 +1,6 @@
 {
   "name": "pr-review-tools",
-  "description": "AI-driven pull request review skills. Calls into agent-tool-pr-reviewer (separate repo, designed in its own spec).",
+  "description": "AI-driven pull request review. Skill (`pr-review`) for user-invoked review of the current branch's diff; subagent (`pr-review`) for programmatic dispatch by other agents like `ship`. Both wrap the agent-tool-pr-reviewer CLI (designed in its own spec).",
   "author": {
     "name": "Chris Moore",
     "email": "chris.paul.moore@gmail.com"
