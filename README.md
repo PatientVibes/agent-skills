@@ -69,6 +69,12 @@ The marketplace's internal name is `patientvibes-skills` (set in `marketplace.js
 |---|---|---|---|---|
 | `graphify` | skill | v1 | Any folder of files → navigable knowledge graph (HTML + GraphRAG JSON + report) | `graphify` CLI on `PATH` |
 
+### code-quality
+
+| Plugin | Ships | Status | Description | Depends on |
+|---|---|---|---|---|
+| `fix-bare-excepts` | skill | v1 | Python — narrow bare `except:` and broad `except Exception` catches to specific exception types; add logging where exceptions were silently swallowed | Python codebase being inspected |
+
 ### reference-agents
 
 | Plugin | Ships | Status | Description | Depends on |

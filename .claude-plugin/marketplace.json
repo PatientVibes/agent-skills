@@ -83,6 +83,13 @@
       "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
       "source": "./plugins/repo-documentation-governance",
       "category": "automation"
+    },
+    {
+      "name": "fix-bare-excepts",
+      "description": "Find and fix bare `except:` clauses and overly broad `except Exception` catches across a Python codebase. Narrows to specific exception types (ImportError, ConnectionError, ValueError, pydantic.ValidationError, etc.) and adds logging where exceptions were silently swallowed. Leaves test files alone.",
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
+      "source": "./plugins/fix-bare-excepts",
+      "category": "code-quality"
     }
   ]
 }
