@@ -1,0 +1,8 @@
+{
+  "name": "fix-bare-excepts",
+  "description": "Find and fix bare `except:` clauses and overly broad `except Exception` catches across a Python codebase. Narrows exception types to the appropriate specific exception (ImportError, ConnectionError, ValueError, pydantic.ValidationError, etc.), adds logging where exceptions were silently swallowed, and leaves test files alone (where broad catches may be intentional).",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}
