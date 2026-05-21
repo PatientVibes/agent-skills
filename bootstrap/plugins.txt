@@ -34,3 +34,6 @@ human-review-loop@patientvibes-skills
 fix-bare-excepts@patientvibes-skills
 csd-form-analysis@patientvibes-skills
 vlm-card-extraction-prompts@patientvibes-skills
+
+# --- chorus-environment (per-machine — only useful on chorus-dev) ---
+chorus-dev-commands@patientvibes-skills

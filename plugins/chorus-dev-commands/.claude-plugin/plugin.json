@@ -1,0 +1,8 @@
+{
+  "name": "chorus-dev-commands",
+  "description": "User-global slash commands for the chorus-dev VM environment — /check (gate pipeline), /db (docker-exec psql/sqlplus against the 4 chorus DBs), /oc (delegate to opencode). Assumes chorus-dev's specific tooling (Docker compose at chorus-platform, opencode at ~/.npm-global/bin, op CLI). NOT portable to other machines without that setup.",
+  "author": {
+    "name": "Chris Moore",
+    "email": "chris.paul.moore@gmail.com"
+  }
+}

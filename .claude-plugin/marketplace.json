@@ -90,6 +90,13 @@
       "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
       "source": "./plugins/fix-bare-excepts",
       "category": "code-quality"
+    },
+    {
+      "name": "chorus-dev-commands",
+      "description": "User-global slash commands for the chorus-dev VM environment — /check (gate pipeline), /db (docker-exec psql/sqlplus against the 4 chorus DBs), /oc (delegate to opencode). Tightly coupled to chorus-dev's specific tooling; NOT portable to other machines.",
+      "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
+      "source": "./plugins/chorus-dev-commands",
+      "category": "chorus-environment"
     }
   ]
 }

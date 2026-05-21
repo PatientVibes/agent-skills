@@ -52,6 +52,19 @@ declare -a PER_REPO_DUPES=(
     "$HOME/chorus-repos/chorus-forms-app/.claude/skills/skill-creator"
 )
 
+# Raw command files under ~/.claude/commands/ that are now provided by a
+# plugin. Per the 2026-05-20 empirical probe (R3 result), raw files shadow
+# plugin-provided slash commands — so removing the raw file is the
+# ACTIVATION step, not just cleanup. The script moves to a `.pre-plugin.bak`
+# rather than rm so the operator can roll back if the slash command
+# misbehaves after activation. See docs/superpowers/plans/
+# 2026-05-20-chorus-dev-commands-plugin-coplan-v3.md in the ai-agents catalog.
+declare -a COMMAND_ACTIVATION=(
+    "check.md|chorus-dev-commands@patientvibes-skills"
+    "db.md|chorus-dev-commands@patientvibes-skills"
+    "oc.md|chorus-dev-commands@patientvibes-skills"
+)
+
 # Tools the harness ecosystem auto-sources secrets from
 # (see agent-harness-repo-doc-governance v0.1.7 / agent-tool-llm-proofreader).
 # The script scaffolds the directory + file at mode 600 and writes a commented
@@ -388,6 +401,37 @@ step_check_mcp() {
 # Step 9 — per-repo skill-creator dedupe
 # ---------------------------------------------------------------------------
 
+step_activate_plugin_commands() {
+    log_step "8.5. Activate plugin-provided slash commands (mv raw → .pre-plugin.bak)"
+    local entry raw_name plugin_at_market raw_path bak_path bak_ts
+    local commands_dir="$HOME/.claude/commands"
+    bak_ts=$(date +%Y%m%dT%H%M%S)
+    local activated=0
+    for entry in "${COMMAND_ACTIVATION[@]}"; do
+        raw_name="${entry%%|*}"
+        plugin_at_market="${entry#*|}"
+        raw_path="$commands_dir/$raw_name"
+
+        if [ -z "${SMOKE_PASSED[$plugin_at_market]:-}" ]; then
+            log_warn "Tier-1 plugin not verified ($plugin_at_market); leaving raw command $raw_path in place"
+            continue
+        fi
+        if [ ! -f "$raw_path" ]; then
+            log_skip "no raw command to activate over: $raw_path"
+            continue
+        fi
+        bak_path="${raw_path}.pre-plugin.bak.${bak_ts}"
+        log_info "activating plugin command: $raw_path → $(basename "$bak_path")"
+        run mv "$raw_path" "$bak_path"
+        activated=$((activated + 1))
+    done
+    if [ "$activated" -gt 0 ]; then
+        log_info "$activated raw command file(s) backed up; plugin versions are now live"
+        log_info "  → verify each plugin command in a Claude Code session (/check, /db, /oc)"
+        log_info "  → once verified, delete the *.pre-plugin.bak.* backups manually"
+    fi
+}
+
 step_dedupe_per_repo() {
     log_step "9. Dedupe per-repo skill-creator (defers to user-level Tier-1)"
     # Only dedupe if the Tier-1 plugin verified — same guard as step 4.
@@ -423,6 +467,7 @@ main() {
     step_scaffold_secrets
     step_assert_secrets_reachable
     step_check_mcp
+    step_activate_plugin_commands
     step_dedupe_per_repo
 
     printf '\n'
