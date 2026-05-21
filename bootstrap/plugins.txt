@@ -1,0 +1,36 @@
+# Expected plugin set — the executable spec for `seed-claude-skills.sh`.
+#
+# Each non-blank, non-comment line is `<plugin>@<marketplace>`. The bootstrap
+# script installs each one (idempotent: skips if already present), runs a
+# smoke test (`claude plugin details`), and only after ALL succeed does it
+# remove stale Tier-2 raw copies.
+#
+# This file is the source-of-truth for "what's the standard set on every
+# PatientVibes dev env." Edit here, re-run the script, environments
+# converge.
+#
+# See:
+#   - docs/superpowers/plans/2026-05-20-skills-standardization-coplan-v2.md
+#   - docs/superpowers/plans/2026-05-20-skills-standardization-inventory.md
+# in the ai-agents catalog repo for the design rationale.
+
+# --- anthropics/claude-plugins-official ---
+claude-md-management@claude-plugins-official
+pr-review-toolkit@claude-plugins-official
+hookify@claude-plugins-official
+security-guidance@claude-plugins-official
+skill-creator@claude-plugins-official
+
+# --- PatientVibes/agent-skills (this marketplace) ---
+co-plan@patientvibes-skills
+code-research@patientvibes-skills
+graphify@patientvibes-skills
+ship@patientvibes-skills
+repo-documentation-governance@patientvibes-skills
+pr-review-tools@patientvibes-skills
+config-env-loading@patientvibes-skills
+verification-retry-loop@patientvibes-skills
+human-review-loop@patientvibes-skills
+fix-bare-excepts@patientvibes-skills
+csd-form-analysis@patientvibes-skills
+vlm-card-extraction-prompts@patientvibes-skills
