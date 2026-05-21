@@ -178,14 +178,23 @@ marketplace_registered() {
 }
 
 step_register_marketplaces() {
-    log_step "2. Register marketplaces"
+    log_step "2. Register marketplaces (refresh cache if already registered)"
     local entry name source
     for entry in "${MARKETPLACES[@]}"; do
         name="${entry%%|*}"
         source="${entry#*|}"
         if marketplace_registered "$name"; then
             log_skip "marketplace already registered: $name"
+            # Already-registered marketplaces have a CACHED copy of the
+            # `marketplace.json` manifest. Refresh it so newly-added plugins
+            # are visible to `plugin install`. Without this, stale cache
+            # produces "Plugin not found in marketplace" errors. Surfaced
+            # during the 2026-05-20 chorus-dev-commands rollout.
+            log_info "refreshing marketplace cache: $name"
+            run "$CLAUDE_BIN" plugin marketplace update "$name"
         else
+            # First-time `add` fetches the latest manifest, so no separate
+            # `update` is needed here.
             log_info "registering marketplace: $name ($source)"
             run "$CLAUDE_BIN" plugin marketplace add "$source"
         fi
