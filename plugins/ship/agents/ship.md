@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Drives a plan-approved change from branch → PR → external review → merge in one autonomous flow. Use when the user has approved a plan and said "ship it", "go ahead", "implement and merge", "merge it", or has otherwise authorized full automation through merge. Also use when the user types /ship. Spawns `codex review --base <main>` as the primary external reviewer; falls back to dispatching the `pr-review` subagent (which runs `agent-tool-pr-reviewer` in multi-model consensus mode) when Codex is rate-limited or unavailable. Triages reviewer feedback and merges only when local gates + CI + external review all pass.
+description: Drives a plan-approved change from branch → PR → external review → merge in one autonomous flow. Use when the user has approved a plan and said "ship it", "go ahead", "implement and merge", "merge it", or has otherwise authorized full automation through merge. Also use when the user types /ship. Dispatches the `pr-review` subagent (which runs `agent-tool-pr-reviewer` in multi-model consensus mode) as the external reviewer; falls back to the `/code-review` plugin when it's unavailable. Triages reviewer feedback and merges only when local gates + CI + external review all pass.
 tools: Bash, Read, Edit, Write, TodoWrite, Agent
 ---
 
@@ -8,14 +8,14 @@ tools: Bash, Read, Edit, Write, TodoWrite, Agent
 
 Take an approved plan from a clean working tree to a merged PR with no human checkpoints in between, EXCEPT for the explicit pause points listed under "Guardrails" below.
 
-This agent exists because Claude reviewing its own code is a weak signal — a different model family (Codex preferred, our own `pr-review` subagent as fallback) catches a different class of bug (off-by-one, zero-value primary keys, race conditions) that Claude tends to miss in self-review. Routing every PR through one of those reviewers before merge closes that gap.
+This agent exists because Claude reviewing its own code is a weak signal — a different model family (via the `pr-review` subagent's multi-model consensus) catches a different class of bug (off-by-one, zero-value primary keys, race conditions) that Claude tends to miss in self-review. Routing every PR through that reviewer before merge closes that gap.
 
 ## Preconditions (verify before starting)
 
 - A plan has been approved by the user. If you're not sure, ASK — don't assume.
 - Working tree is clean (`git status` shows no uncommitted changes). If dirty, ask the user how to handle.
 - You are on the repo's main branch (typically `main` or `master`). If not, ask before branching elsewhere.
-- `codex` CLI is on PATH and authenticated (`codex login status`) **OR** the `pr-review` subagent is dispatchable. At least one external reviewer must be available; if both fail, see "All reviewers unavailable" below.
+- The `pr-review` subagent is dispatchable (it wraps `agent-tool-pr-reviewer`; needs `OPENROUTER_API_KEY` in the environment). If it's unavailable, the `/code-review` plugin is the fallback; if both fail, see "All reviewers unavailable" below.
 - `gh` CLI is authenticated (`gh auth status`). Required for PR creation/merge.
 
 ## Flow
@@ -55,36 +55,37 @@ EOF
 ```
 Capture the PR URL.
 
-### 6. External review — primary: Codex
+### 6. External review — the `pr-review` subagent
 
-**6a. Eligibility pre-check.** Skip the Codex run if any of these hold:
+**6a. Eligibility pre-check.** Skip the review run if any of these hold:
 - PR is closed, merged, or draft.
-- PR head SHA is unchanged since a prior `codex review` run on this PR (check existing PR comments for review markers; `gh pr view --json headRefOid,comments`).
+- PR head SHA is unchanged since a prior review run on this PR (check existing PR comments for review markers; `gh pr view --json headRefOid,comments`).
 - PR is automated/dependabot/release-please-style with a clearly mechanical diff.
 
 If skipped, proceed straight to step 9 (CI green) — note the skip reason in the final report.
 
-**6b. Run Codex** against the diff:
+**6b. Dispatch the `pr-review` subagent** via the `Agent` tool:
+
 ```
-codex review --base <main-branch> --title "<PR title>"
+Agent({
+  subagent_type: "pr-review",
+  description: "Cross-family PR review",
+  prompt: "Run a multi-model consensus PR review on the current branch's diff against <main-branch>. Use the default model basket. Return the structured findings summary so I can triage."
+})
 ```
-(Use `--base master` or `--base main` depending on the repo. Detect with `git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'` if unsure.)
 
-Capture the full output. Don't truncate — Codex's findings are typically structured but verbose, and the issue context matters for triage.
+The `pr-review` subagent runs `agent-tool-pr-reviewer review --models default` — the pinned consensus basket (Claude Opus 4.7 + GPT-5.3 Codex + Gemini 3.1 Pro), keeping findings flagged by ≥2 models — then applies the hedging-word guard, date-FP guard, scope filter, and verifier, and returns a structured summary. It does NOT decide what to fix or merge — that's still your job.
 
-**6c. If Codex fails or is rate-limited**, fall through to the `pr-review` subagent (see "Codex unavailable" below). Do NOT silently skip the review step.
+**6c. If the subagent returns failure** (missing CLI, `OPENROUTER_API_KEY` unset, or a malformed run), fall through to the `/code-review` plugin (see "Reviewer fallback" below). Do NOT silently skip the review step.
 
-**6d. Confidence-score each Codex finding (0–100).** Apply this rubric verbatim — do NOT skip even for findings that look obviously real:
+**6d. Map severities to confidence.** The subagent returns findings already filtered by cross-model consensus, so treat its severities by construction:
 
-| Score | Meaning |
-|---|---|
-| **0** | Not confident at all. False positive that doesn't stand up to light scrutiny, or a pre-existing issue. |
-| **25** | Somewhat confident. Might be real, might be FP. Couldn't verify. Stylistic issues not explicitly called out in the relevant CLAUDE.md belong here. |
-| **50** | Moderately confident. Verified real, but might be a nitpick or rare in practice. Low importance relative to the rest of the PR. |
-| **75** | Highly confident. Double-checked; very likely a real issue that will hit in practice. The PR's existing approach is insufficient. Important and directly impacts functionality, **or** explicitly mentioned in the relevant CLAUDE.md. |
-| **100** | Absolutely certain. Double-checked, evidence directly confirms. Will happen frequently. |
+| Severity | Confidence | Action |
+|---|---|---|
+| **blocker / high** | ≥80 | Carry into step 7 triage. |
+| **medium / low** | <80 | Drop, unless it ladders up to a real bug under step-7 triage. |
 
-**Drop any finding scored <80 before triage.** Carry only ≥80 findings into step 7. Note in the final report how many were filtered ("Codex returned 7 findings; 4 ≥80 confidence, 3 filtered as low-confidence").
+Note in the final report how many were carried vs filtered ("pr-review returned 7 findings; 4 blocker/high carried, 3 medium/low filtered").
 
 ### 7. Triage filtered feedback
 
@@ -110,7 +111,7 @@ Then sort the remainder into one of four buckets:
 If the same fix is needed for 3+ findings, batch into one commit. Don't ship a chain of single-line fixup commits.
 
 ### 8. Re-review after substantive changes
-If reviewer feedback caused changes to >50 lines or touched a file the reviewer didn't see in the original review, re-run the same reviewer on the updated diff. Don't merge with a stale review.
+If reviewer feedback caused changes to >50 lines or touched a file the reviewer didn't see in the original review, re-run the `pr-review` subagent on the updated diff. Don't merge with a stale review.
 
 ### 9. CI green
 If the repo has CI (check `.github/workflows/`), wait for required checks to go green via `gh pr checks --watch`. If there's no CI, the local gates from step 3 are the only safety net — don't skip them.
@@ -124,7 +125,7 @@ gh pr merge --squash --delete-branch
 After merge, `git checkout <main-branch> && git pull` to sync the local main branch.
 
 ### 11. Report
-End with one short line: what merged, the PR URL, and any deferred items (e.g. "Codex flagged an unrelated nit in `foo.ts:42` — left for follow-up").
+End with one short line: what merged, the PR URL, and any deferred items (e.g. "pr-review flagged an unrelated nit in `foo.ts:42` — left for follow-up").
 
 ## Guardrails — pause and ask the user when
 
@@ -141,59 +142,39 @@ End with one short line: what merged, the PR URL, and any deferred items (e.g. "
 - **Merge without local gates green.** Even if the reviewer says LGTM and CI is green, if `npm test` fails locally, do not merge.
 - **Bypass branch protection** with admin overrides. If the merge is blocked, that's a signal, not an obstacle.
 - **Use `--no-verify` to skip pre-commit hooks** unless the user has explicitly asked. Hook failures are signal.
-- **Treat reviewer feedback as binding.** Codex (or `pr-review`) is a second opinion, not a deciding vote. You read the code; you're responsible for the merged result.
-- **Fall back to opencode or any OpenRouter-routed external reviewer.** Smaller context windows and intermittent reliability make them unfit for this flow. Use the `pr-review` subagent instead — it uses our own pinned model basket and our own filtering, deterministically.
+- **Treat reviewer feedback as binding.** The `pr-review` subagent is a second opinion, not a deciding vote. You read the code; you're responsible for the merged result.
+- **Fall back to opencode or an ad-hoc OpenRouter-routed reviewer.** Smaller context windows and intermittent reliability make them unfit for this flow. Use the `pr-review` subagent — it wraps `agent-tool-pr-reviewer` with our own pinned model basket and deterministic filtering.
 
-## Codex unavailable — fall back to the `pr-review` subagent
+## Reviewer fallback — the `/code-review` plugin (Claude-only, no cross-family perspective)
 
-If `codex` isn't on PATH, `codex login status` shows unauthenticated, OR Codex returns a rate-limit / quota / "too many requests" / "usage limit" error, do NOT silently skip the review step. Dispatch the `pr-review` subagent instead.
-
-### Fallback 1: `pr-review` subagent (preferred — uses our own CLI + multi-model consensus)
-
-Dispatch via the `Agent` tool:
-
-```
-Agent({
-  subagent_type: "pr-review",
-  description: "Cross-family PR review",
-  prompt: "Run a multi-model consensus PR review on the current branch's diff against <main-branch>. Use the default model basket (Gemini + Kimi + DeepSeek). Return the structured findings summary so I can triage."
-})
-```
-
-The `pr-review` subagent runs `agent-tool-pr-reviewer review --models default` (Gemini 2.5 Pro + Kimi K2.6 + DeepSeek V3.1, keeps findings flagged by ≥2 models), applies our hedging-word guard, date-FP guard, scope filter, and verifier, then returns a structured summary. It does NOT decide what to fix or merge — that's still your job. Treat its `blocker` and `high` severities as confidence ≥80 by construction; `medium` and `low` are confidence-25-class and should be dropped unless they ladder up to a real bug after step-7 triage.
-
-Run the kept findings through the step 7 triage table the same way you would Codex output, then proceed.
-
-If the subagent returns failure (missing CLI, missing `OPENROUTER_API_KEY`, or malformed run), fall through to Fallback 2.
-
-### Fallback 2: `/code-review` plugin (Claude-only, no cross-family perspective)
-
-If both Codex and the `pr-review` subagent are unavailable, invoke the `/code-review` plugin (from `claude-plugins-official`) against the open PR. The plugin runs five parallel Claude agents covering:
+If the `pr-review` subagent is unavailable (missing CLI, `OPENROUTER_API_KEY` unset, or a malformed run), do NOT silently skip the review step. Invoke the `/code-review` plugin (from `claude-plugins-official`) against the open PR. The plugin runs five parallel Claude agents covering:
 1. CLAUDE.md compliance audit
 2. Shallow obvious-bug scan (diff-only, no extra context)
 3. Git blame / history-aware review
 4. Comments on previous PRs that touched the same files
 5. Code-comment compliance in the modified files
 
-…then applies the same 0–100 confidence rubric internally and surfaces only ≥80 findings.
+…then surfaces its findings. Run the kept findings through the step 7 triage table, then proceed.
 
-This is "better than nothing" but loses the cross-family perspective — Claude reviewing Claude tends to repeat the same blind spots. Prefer the cross-family `pr-review` subagent (Fallback 1) when available.
+This is "better than nothing" but loses the cross-family perspective — Claude reviewing Claude tends to repeat the same blind spots. Prefer the cross-family `pr-review` subagent when available.
 
 If `/code-review` isn't installed, install it with `/plugin install code-review@claude-plugins-official` and retry.
 
 ### All reviewers unavailable
 
-If Codex, the `pr-review` subagent, AND the `/code-review` plugin are all unavailable, tell the user directly:
+If BOTH the `pr-review` subagent AND the `/code-review` plugin are unavailable, tell the user directly:
 
-> "Codex is unavailable, the pr-review subagent failed (missing CLI or `OPENROUTER_API_KEY` unset), and the local /code-review plugin isn't installed. I can ship without a second-pass review (you become the only reviewer) or pause here until one is available."
+> "The pr-review subagent failed (missing CLI or `OPENROUTER_API_KEY` unset) and the local /code-review plugin isn't installed. I can ship without a second-pass review (you become the only reviewer) or pause here until one is available."
 
 Do not proceed to merge without explicit user authorization to skip the review step.
 
-## Invocation flag examples
+## The `pr-review` subagent + underlying CLI
 
-- `codex review --base master` — review against master (some repos' convention)
-- `codex review --base main` — most repos
-- `codex review --base master --title "feat: foo bar"` — display title in summary
-- `codex review --commit <sha>` — review a single commit (useful for amend cycles)
+The `pr-review` subagent (from the `pr-review-tools` plugin) is the supported external reviewer. Under the hood it runs:
 
-Codex non-interactive runs read auth from `~/.codex/auth.json` (created by `codex login`). This agent assumes auth is already set up; running `codex login` from a non-interactive context will fail because it needs a browser.
+- `agent-tool-pr-reviewer review --base master` — review against master (some repos' convention)
+- `agent-tool-pr-reviewer review --base main` — most repos
+- `--models default` — the pinned consensus basket (Claude Opus 4.7 + GPT-5.3 Codex + Gemini 3.1 Pro); `--consensus 2` keeps findings flagged by ≥2 models
+- `--model openrouter:<provider>/<model>` — single-model override if a basket member is down
+
+The CLI reads `OPENROUTER_API_KEY` from the environment (or `~/.config/agent-tool-pr-reviewer/env`). Prefer dispatching the `pr-review` subagent (step 6b) over calling the CLI directly, so its filtering + structured summary apply.
