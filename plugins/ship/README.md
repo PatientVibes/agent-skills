@@ -2,11 +2,13 @@
 
 Autonomous branch → PR → external review → merge subagent. Plugin in the `patientvibes-skills` marketplace.
 
-## Status: v1
+## Status: v2
 
-Depends on `codex` (primary external reviewer) and the `pr-review` subagent in [`pr-review-tools`](../pr-review-tools/) (fallback). The `pr-review` subagent wraps the [`agent-tool-pr-reviewer`](../../../agent-tool-pr-reviewer/) CLI in multi-model consensus mode (Gemini + Kimi + DeepSeek). `gh` must be authenticated.
+Depends on the `pr-review` subagent in [`pr-review-tools`](../pr-review-tools/) as the external reviewer, with the `/code-review` plugin (`claude-plugins-official`) as the fallback. The `pr-review` subagent wraps the [`agent-tool-pr-reviewer`](../../../agent-tool-pr-reviewer/) CLI in multi-model consensus mode (Claude Opus 4.7 + GPT-5.3 Codex + Gemini 3.1 Pro). `gh` must be authenticated.
 
-**No opencode / OpenRouter dependency in the fallback path** — the OpenRouter models have smaller context windows and intermittent reliability issues that make them unfit for this flow.
+> **v2 change:** the `codex` CLI is no longer used (account access removed). The `pr-review` subagent is now the primary external reviewer.
+
+**No opencode / ad-hoc OpenRouter reviewer in any path** — only the pinned `agent-tool-pr-reviewer` basket (via the `pr-review` subagent), whose models, filtering, and consensus are deterministic.
 
 ## Agents
 
@@ -16,10 +18,9 @@ Dispatched when the user has approved a plan and said "ship it", "go ahead", "im
 
 External-review ladder:
 
-1. **Primary:** `codex review --base <main>` — second-pair-of-eyes from a different model family
-2. **Fallback 1:** dispatch the `pr-review` subagent — runs `agent-tool-pr-reviewer --models default` (Gemini + Kimi + DeepSeek consensus, ≥2-model agreement)
-3. **Fallback 2:** `/code-review` plugin from `claude-plugins-official` (5 parallel Claude agents — Claude-only, no cross-family perspective)
-4. **All unavailable:** stops and asks the user
+1. **Primary:** dispatch the `pr-review` subagent — runs `agent-tool-pr-reviewer review --models default` (Claude Opus 4.7 + GPT-5.3 Codex + Gemini 3.1 Pro consensus, ≥2-model agreement) — a second pair of eyes from different model families
+2. **Fallback:** `/code-review` plugin from `claude-plugins-official` (5 parallel Claude agents — Claude-only, no cross-family perspective)
+3. **All unavailable:** stops and asks the user
 
 Merges only when local gates + CI + external review all pass.
 

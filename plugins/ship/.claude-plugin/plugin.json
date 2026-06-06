@@ -1,6 +1,6 @@
 {
   "name": "ship",
-  "description": "Subagent driving an approved change from branch → PR → external review → merge in one autonomous flow. Codex primary; falls back to dispatching the `pr-review` subagent (which runs the agent-tool-pr-reviewer CLI in multi-model consensus mode). No opencode/OpenRouter dependency in the fallback path.",
+  "description": "Subagent driving an approved change from branch → PR → external review → merge in one autonomous flow. External review via the `pr-review` subagent (which runs the agent-tool-pr-reviewer CLI in multi-model consensus mode: Claude Opus 4.7 + GPT-5.3 Codex + Gemini 3.1 Pro); falls back to the `/code-review` plugin if it's unavailable.",
   "author": {
     "name": "Chris Moore",
     "email": "chris.paul.moore@gmail.com"
