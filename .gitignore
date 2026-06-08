@@ -8,3 +8,6 @@ Thumbs.db
 # pr-reviewer transient run artifacts (convention: every PR runs the
 # reviewer locally pre-push and writes output here)
 .pr-review-out/
+
+# pr-review tool run output (local only)
+.ai-review/
