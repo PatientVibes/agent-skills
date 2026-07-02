@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Code-reviews the current branch's diff via the `agent-tool-pr-reviewer` CLI (multi-model consensus mode by default — Gemini + Kimi + DeepSeek, keeps findings flagged by ≥2 models). Use as the external-reviewer leg when codex is unavailable, or any time another agent needs a deterministic cross-family PR review without an interactive session. Returns a structured findings summary (blocker / high / medium / low counts + verbatim evidence for blockers/highs) for the parent agent to triage.
+description: Code-reviews the current branch's diff via the `agent-tool-pr-reviewer` CLI (multi-model consensus mode with a pinned Claude-free basket — GPT-5.3 Codex + Gemini 3.1 Pro + DeepSeek V4 Pro, keeps findings flagged by ≥2 models). Use as the external-reviewer leg when codex is unavailable, or any time another agent needs a deterministic cross-family PR review without an interactive session. Returns a structured findings summary (blocker / high / medium / low counts + verbatim evidence for blockers/highs) for the parent agent to triage.
 tools: Bash, Read
 ---
 
@@ -8,7 +8,7 @@ tools: Bash, Read
 
 Run an AI-driven PR review on the current branch's diff against its base ref via the `agent-tool-pr-reviewer` CLI, then return a structured summary the parent agent can triage.
 
-This subagent is the "agent we build" half of the cross-family reviewer pattern — it provides a deterministic, non-interactive alternative to running `codex review` or shelling out to `opencode run`. It uses our own pinned model basket (Gemini 2.5 Pro + Kimi K2.6 + DeepSeek V3.1) and our own filtering (date-FP guard, hedging-word guard, scope filter, verifier) so the output is stable across runs.
+This subagent is the "agent we build" half of the cross-family reviewer pattern — it provides a deterministic, non-interactive alternative to running `codex review` or shelling out to `opencode run`. It uses our own pinned Claude-free model basket (GPT-5.3 Codex + Gemini 3.1 Pro + DeepSeek V4 Pro) and our own filtering (date-FP guard, hedging-word guard, scope filter, verifier) so the output is stable across runs.
 
 ## Preconditions
 
@@ -21,10 +21,12 @@ This subagent is the "agent we build" half of the cross-family reviewer pattern 
 From the repo root:
 
 ```bash
-agent-tool-pr-reviewer review --models default --out .pr-review-out
+agent-tool-pr-reviewer review \
+  --models openrouter:openai/gpt-5.3-codex,openrouter:google/gemini-3.1-pro-preview,openrouter:deepseek/deepseek-v4-pro \
+  --out .pr-review-out
 ```
 
-- `--models default` runs the multi-model consensus basket (Gemini + Kimi + DeepSeek) and keeps findings flagged by ≥2 models. This is the recommended mode for autonomous review — cross-family by construction, no Claude in the loop.
+- The pinned `--models` basket (GPT-5.3 Codex + Gemini 3.1 Pro + DeepSeek V4 Pro) is cross-family by construction with **no Claude in the loop** — reviews stay independent of the model doing the work. Do NOT use `--models default`: since CLI v0.5.3 (June 2026) the curated default is Claude Opus 4.7 + GPT-5.3 Codex + Gemini 3.1 Pro (the old Gemini 2.5 Pro basket broke upstream), which is not Claude-free and costs more. Pinned 2026-07-02; the two non-DeepSeek members are shared with the curated default and battle-tested.
 - `--out .pr-review-out` writes artifacts to a stable path the parent agent can read.
 
 Capture the exit code:
