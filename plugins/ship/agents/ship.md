@@ -74,7 +74,7 @@ Agent({
 })
 ```
 
-The `pr-review` subagent runs `agent-tool-pr-reviewer review` with the pinned Claude-free basket (`--models openrouter:openai/gpt-5.3-codex,openrouter:google/gemini-3.1-pro-preview,openrouter:deepseek/deepseek-v4-pro` — GPT-5.3 Codex + Gemini 3.1 Pro + DeepSeek V4 Pro), keeping findings flagged by ≥2 models — then applies the hedging-word guard, date-FP guard, scope filter, and verifier, and returns a structured summary. It does NOT decide what to fix or merge — that's still your job.
+The `pr-review` subagent runs `agent-tool-pr-reviewer review` with the pinned Claude-free basket (`--models openrouter:openai/gpt-5.3-codex,openrouter:google/gemini-3.1-pro-preview,openrouter:moonshotai/kimi-k2.6` — GPT-5.3 Codex + Gemini 3.1 Pro + Kimi K2.6), keeping findings flagged by ≥2 models — then applies the hedging-word guard, date-FP guard, scope filter, and verifier, and returns a structured summary. It does NOT decide what to fix or merge — that's still your job.
 
 **6c. If the subagent returns failure** (missing CLI, `OPENROUTER_API_KEY` unset, or a malformed run), fall through to the `/code-review` plugin (see "Reviewer fallback" below). Do NOT silently skip the review step.
 
@@ -174,7 +174,7 @@ The `pr-review` subagent (from the `pr-review-tools` plugin) is the supported ex
 
 - `agent-tool-pr-reviewer review --base master` — review against master (some repos' convention)
 - `agent-tool-pr-reviewer review --base main` — most repos
-- `--models openrouter:openai/gpt-5.3-codex,openrouter:google/gemini-3.1-pro-preview,openrouter:deepseek/deepseek-v4-pro` — the pinned Claude-free basket (GPT-5.3 Codex + Gemini 3.1 Pro + DeepSeek V4 Pro); do NOT use `--models default` (it includes Claude Opus 4.7 since v0.5.3); `--consensus 2` keeps findings flagged by ≥2 models
+- `--models openrouter:openai/gpt-5.3-codex,openrouter:google/gemini-3.1-pro-preview,openrouter:moonshotai/kimi-k2.6` — the pinned Claude-free basket (GPT-5.3 Codex + Gemini 3.1 Pro + Kimi K2.6); do NOT use `--models default` (it includes Claude Opus 4.7 since v0.5.3); `--consensus 2` keeps findings flagged by ≥2 models
 - `--model openrouter:<provider>/<model>` — single-model override if a basket member is down
 
 The CLI reads `OPENROUTER_API_KEY` from the environment (or `~/.config/agent-tool-pr-reviewer/env`). Prefer dispatching the `pr-review` subagent (step 6b) over calling the CLI directly, so its filtering + structured summary apply.
