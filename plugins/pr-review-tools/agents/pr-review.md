@@ -28,6 +28,44 @@ agent-tool-pr-reviewer review \
 
 - The pinned `--models` basket (GPT-5.3 Codex + Gemini 3.1 Pro + Kimi K2.6) is cross-family by construction with **no Claude in the loop** — reviews stay independent of the model doing the work. Do NOT use `--models default`: since CLI v0.5.3 (June 2026) the curated default is Claude Opus 4.7 + GPT-5.3 Codex + Gemini 3.1 Pro (the old Gemini 2.5 Pro basket broke upstream), which is not Claude-free and costs more. Pinned 2026-07-02; the two non-DeepSeek members are shared with the curated default and battle-tested.
 - `--out .pr-review-out` writes artifacts to a stable path the parent agent can read.
+- **Copy the `--models` line verbatim.** Do not shorten it to `--models default`, and do not omit `--models` (omitting it selects the curated default, which is the same failure). Observed 2026-07-15 on two consecutive dispatches: the flag was dropped and the run silently used the Claude-containing default, so "cross-family review" meant Claude reviewing its own diff. The step below exists to catch exactly that.
+
+### Verify the basket before reporting — MANDATORY
+
+The pinned basket is the whole point of this subagent, and a dropped `--models`
+flag fails **silently** (the run succeeds and returns findings; only the model
+list differs). So do not trust that you passed it — check the run's own record:
+
+```bash
+python3 -c "
+import json,sys,glob
+f=sorted(glob.glob('.pr-review-out/**/findings.json',recursive=True))[-1]
+m=json.load(open(f))['metadata']
+used=m.get('models') or [m.get('model')]
+print('basket:', used)
+bad=[x for x in used if x and ('claude' in x.lower() or 'anthropic' in x.lower())]
+sys.exit(1 if bad else 0)
+"
+```
+
+If it exits non-zero, a Claude model is in the basket: the cross-family property
+is void. **Re-run with the pinned `--models` line before reporting anything.**
+If it still resolves with Claude present, return failure and say so plainly —
+report the basket you got. Never present a Claude-containing run as a
+cross-family review.
+
+### Known limitation — state it in every report
+
+The CLI is **diff-only**: it ingests the diff text (typically 8–20K input
+tokens) with **no repo access**. It cannot verify that a `file:line` cite is
+real, that a claim matches the surrounding code, or that a related call site was
+missed — the questions that matter most on large or translation-heavy
+codebases. Treat a 0-findings result as **weak evidence, not a clean bill of
+health**, and say so in the summary. When the change is load-bearing, recommend
+the parent also run a reviewer with repo access (`opencode run --agent
+gemini-flash|cheap` is OpenRouter-backed and non-Claude; the reasoning-heavy
+opencode agents — `frontier`, `kimi`, `minimax` — have been observed to hang, so
+prefer the flash lanes).
 
 Capture the exit code:
 
@@ -52,6 +90,8 @@ markdown or code-block-heavy files) does not prematurely close the fence.**
 
 `````
 Exit: <code>
+Basket: <metadata.models verbatim>   ← MUST be Claude-free; see "Verify the basket"
+Evidence strength: diff-only (no repo access) — 0 findings is weak evidence
 Blockers: <count>   ← from findings.json severity == "blocker"
 High:     <count>
 Medium:   <count>
