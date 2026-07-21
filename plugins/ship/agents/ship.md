@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Drives a plan-approved change from branch → PR → external review → merge in one autonomous flow. Use when the user has approved a plan and said "ship it", "go ahead", "implement and merge", "merge it", or has otherwise authorized full automation through merge. Also use when the user types /ship. Dispatches the `pr-review` subagent (which runs `agent-tool-pr-reviewer` in multi-model consensus mode) as the external reviewer; falls back to the `/code-review` plugin when it's unavailable. Triages reviewer feedback and merges only when local gates + CI + external review all pass.
+description: Drives a plan-approved change from branch → PR → external review → merge in one autonomous flow. Use when the user has approved a plan and said "ship it", "go ahead", "implement and merge", "merge it", or has otherwise authorized full automation through merge. Also use when the user types /ship. Dispatches the `pr-review` subagent (which runs `agent-tool-pr-reviewer` with its pinned reviewer + verifier) as the external reviewer; falls back to the `/code-review` plugin when it's unavailable. Triages reviewer feedback and merges only when local gates + CI + external review all pass.
 tools: Bash, Read, Edit, Write, TodoWrite, Agent
 ---
 
@@ -8,7 +8,7 @@ tools: Bash, Read, Edit, Write, TodoWrite, Agent
 
 Take an approved plan from a clean working tree to a merged PR with no human checkpoints in between, EXCEPT for the explicit pause points listed under "Guardrails" below.
 
-This agent exists because Claude reviewing its own code is a weak signal — a different model family (via the `pr-review` subagent's multi-model consensus) catches a different class of bug (off-by-one, zero-value primary keys, race conditions) that Claude tends to miss in self-review. Routing every PR through that reviewer before merge closes that gap.
+This agent exists because Claude reviewing its own code is a weak signal — a different model family (via the `pr-review` subagent's pinned cross-family reviewer) catches a different class of bug (off-by-one, zero-value primary keys, race conditions) that Claude tends to miss in self-review. Routing every PR through that reviewer before merge closes that gap.
 
 ## Preconditions (verify before starting)
 
@@ -70,15 +70,15 @@ If skipped, proceed straight to step 9 (CI green) — note the skip reason in th
 Agent({
   subagent_type: "pr-review",
   description: "Cross-family PR review",
-  prompt: "Run a multi-model consensus PR review on the current branch's diff against <main-branch>. Use the default model basket. Return the structured findings summary so I can triage."
+  prompt: "Run a PR review on the current branch's diff against <main-branch> using your pinned reviewer configuration. Return the structured findings summary so I can triage."
 })
 ```
 
-The `pr-review` subagent runs `agent-tool-pr-reviewer review` with the pinned Claude-free basket (`--models openrouter:openai/gpt-5.3-codex,openrouter:google/gemini-3.1-pro-preview,openrouter:moonshotai/kimi-k2.6` — GPT-5.3 Codex + Gemini 3.1 Pro + Kimi K2.6), keeping findings flagged by ≥2 models — then applies the hedging-word guard, date-FP guard, scope filter, and verifier, and returns a structured summary. It does NOT decide what to fix or merge — that's still your job.
+The `pr-review` subagent runs `agent-tool-pr-reviewer review --model openrouter:openai/gpt-5.3-codex --verifier openrouter:google/gemini-3.1-pro-preview` — one pinned strong Claude-free reviewer (never the CLI's `default` basket, which has silently changed membership before) with a Gemini verifier pass that only drops unsupported findings — then applies the hedging-word guard, date-FP guard, and scope filter, and returns a structured summary. It does NOT decide what to fix or merge — that's still your job.
 
 **6c. If the subagent returns failure** (missing CLI, `OPENROUTER_API_KEY` unset, or a malformed run), fall through to the `/code-review` plugin (see "Reviewer fallback" below). Do NOT silently skip the review step.
 
-**6d. Map severities to confidence.** The subagent returns findings already filtered by cross-model consensus, so treat its severities by construction:
+**6d. Map severities to confidence.** The subagent returns findings already filtered by the verifier pass, so treat its severities by construction:
 
 | Severity | Confidence | Action |
 |---|---|---|
@@ -174,7 +174,7 @@ The `pr-review` subagent (from the `pr-review-tools` plugin) is the supported ex
 
 - `agent-tool-pr-reviewer review --base master` — review against master (some repos' convention)
 - `agent-tool-pr-reviewer review --base main` — most repos
-- `--models openrouter:openai/gpt-5.3-codex,openrouter:google/gemini-3.1-pro-preview,openrouter:moonshotai/kimi-k2.6` — the pinned Claude-free basket (GPT-5.3 Codex + Gemini 3.1 Pro + Kimi K2.6); do NOT use `--models default` (it includes Claude Opus 4.7 since v0.5.3); `--consensus 2` keeps findings flagged by ≥2 models
-- `--model openrouter:<provider>/<model>` — single-model override if a basket member is down
+- `--model openrouter:openai/gpt-5.3-codex --verifier openrouter:google/gemini-3.1-pro-preview` — the standing pinned Claude-free configuration (see the pr-review agent doc)
+- Do NOT use `--models default` or `--verifier default`: both resolve to Claude-containing defaults since CLI v0.5.3, and the built-in basket has silently changed membership across versions. Pin models explicitly.
 
-The CLI reads `OPENROUTER_API_KEY` from the environment (or `~/.config/agent-tool-pr-reviewer/env`). Prefer dispatching the `pr-review` subagent (step 6b) over calling the CLI directly, so its filtering + structured summary apply.
+The CLI reads `OPENROUTER_API_KEY` from the environment but does **not** auto-source `~/.config/agent-tool-pr-reviewer/env` — source it first if the key is unset. Prefer dispatching the `pr-review` subagent (step 6b) over calling the CLI directly, so its filtering + structured summary apply.

@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Code-reviews the current branch's diff via the `agent-tool-pr-reviewer` CLI (multi-model consensus mode with a pinned Claude-free basket — GPT-5.3 Codex + Gemini 3.1 Pro + Kimi K2.6, keeps findings flagged by ≥2 models). Use as the external-reviewer leg when codex is unavailable, or any time another agent needs a deterministic cross-family PR review without an interactive session. Returns a structured findings summary (blocker / high / medium / low counts + verbatim evidence for blockers/highs) for the parent agent to triage.
+description: Code-reviews the current branch's diff via the `agent-tool-pr-reviewer` CLI (one pinned strong Claude-free reviewer — GPT-5.3 Codex — plus a pinned Gemini verifier pass that drops unsupported findings). Use as the external-reviewer leg when codex is unavailable, or any time another agent needs a deterministic cross-family PR review without an interactive session. Returns a structured findings summary (blocker / high / medium / low counts + verbatim evidence for blockers/highs) for the parent agent to triage.
 tools: Bash, Read
 ---
 
@@ -8,12 +8,14 @@ tools: Bash, Read
 
 Run an AI-driven PR review on the current branch's diff against its base ref via the `agent-tool-pr-reviewer` CLI, then return a structured summary the parent agent can triage.
 
-This subagent is the "agent we build" half of the cross-family reviewer pattern — it provides a deterministic, non-interactive alternative to running `codex review` or shelling out to `opencode run`. It uses our own pinned Claude-free model basket (GPT-5.3 Codex + Gemini 3.1 Pro + Kimi K2.6) and our own filtering (date-FP guard, hedging-word guard, scope filter, verifier) so the output is stable across runs.
+This subagent is the "agent we build" half of the cross-family reviewer pattern — it provides a deterministic, non-interactive alternative to running `codex review` or shelling out to `opencode run`. It pins one strong Claude-free code-review model (GPT-5.3 Codex — same family as the primary codex reviewer, so finding style stays consistent) plus a pinned Gemini verifier pass, and applies its own filtering (date-FP guard, hedging-word guard, scope filter) so the output is stable across runs and reviews stay independent of the model doing the work.
+
+> History: this agent originally ran `--models default` (3-model consensus). CLI v0.5.3 silently re-pointed that basket to include Claude Opus 4.7, so the basket was pinned Claude-free (2026-07-02: GPT-5.3 Codex + Gemini 3.1 Pro + Kimi K2.6), then simplified to one strong reviewer + verifier (2026-07-21). Never rely on the CLI's `default` — pin models explicitly.
 
 ## Preconditions
 
 - `agent-tool-pr-reviewer --version` succeeds. If missing, return failure: `agent-tool-pr-reviewer not on PATH; install with: uv tool install --editable D:/agent-tool-pr-reviewer`. Do NOT proceed.
-- `OPENROUTER_API_KEY` is set in env, OR `~/.config/agent-tool-pr-reviewer/env` exists (mode 600). If neither, return failure and stop.
+- `OPENROUTER_API_KEY` is set in env, OR `~/.config/agent-tool-pr-reviewer/env` exists (mode 600). If neither, return failure and stop. **The CLI does NOT auto-source the env file** — source it explicitly as shown below.
 - Current working directory is a git repo with a resolvable base ref (`origin/HEAD` → `main` → `master`).
 
 ## Run
@@ -21,38 +23,43 @@ This subagent is the "agent we build" half of the cross-family reviewer pattern 
 From the repo root:
 
 ```bash
+[ -n "$OPENROUTER_API_KEY" ] || { set -a; . ~/.config/agent-tool-pr-reviewer/env; set +a; }
 agent-tool-pr-reviewer review \
-  --models openrouter:openai/gpt-5.3-codex,openrouter:google/gemini-3.1-pro-preview,openrouter:moonshotai/kimi-k2.6 \
+  --model openrouter:openai/gpt-5.3-codex \
+  --verifier openrouter:google/gemini-3.1-pro-preview \
   --out .pr-review-out
 ```
 
-- The pinned `--models` basket (GPT-5.3 Codex + Gemini 3.1 Pro + Kimi K2.6) is cross-family by construction with **no Claude in the loop** — reviews stay independent of the model doing the work. Do NOT use `--models default`: since CLI v0.5.3 (June 2026) the curated default is Claude Opus 4.7 + GPT-5.3 Codex + Gemini 3.1 Pro (the old Gemini 2.5 Pro basket broke upstream), which is not Claude-free and costs more. Pinned 2026-07-02; the two non-DeepSeek members are shared with the curated default and battle-tested.
+- The env-file sourcing line is required: the CLI does **not** auto-source `~/.config/agent-tool-pr-reviewer/env` (observed exit-2 `ModelResolutionError` on 2026-07-21 when the key wasn't already exported).
+- `--model openrouter:openai/gpt-5.3-codex` pins the single strong reviewer, **no Claude in the loop** — reviews stay independent of the model doing the work. Do NOT use `--models default`: since CLI v0.5.3 (June 2026) the curated default includes Claude Opus 4.7, which is not Claude-free and costs more.
+- `--verifier openrouter:google/gemini-3.1-pro-preview` replaces the noise filter that ≥2-model consensus used to provide: it only ever *drops* findings whose evidence isn't verbatim in the diff or that it judges speculative — it cannot add findings. Do NOT use `--verifier default`: it expands to a Claude model, voiding the Claude-free property.
 - `--out .pr-review-out` writes artifacts to a stable path the parent agent can read.
-- **Copy the `--models` line verbatim.** Do not shorten it to `--models default`, and do not omit `--models` (omitting it selects the curated default, which is the same failure). Observed 2026-07-15 on two consecutive dispatches: the flag was dropped and the run silently used the Claude-containing default, so "cross-family review" meant Claude reviewing its own diff. The step below exists to catch exactly that.
+- **Copy the `--model` and `--verifier` lines verbatim.** Do not substitute `--models default`, and do not omit `--model` (omitting it selects the curated Claude-containing default — observed 2026-07-15 on two consecutive dispatches, so "cross-family review" meant Claude reviewing its own diff). The step below exists to catch exactly that.
 
-### Verify the basket before reporting — MANDATORY
+### Verify the models before reporting — MANDATORY
 
-The pinned basket is the whole point of this subagent, and a dropped `--models`
-flag fails **silently** (the run succeeds and returns findings; only the model
-list differs). So do not trust that you passed it — check the run's own record:
+The pinned Claude-free reviewer is the whole point of this subagent, and a
+dropped `--model` flag fails **silently** (the run succeeds and returns
+findings; only the model differs). So do not trust that you passed it — check
+the run's own record:
 
 ```bash
 python3 -c "
 import json,sys,glob
 f=sorted(glob.glob('.pr-review-out/**/findings.json',recursive=True))[-1]
 m=json.load(open(f))['metadata']
-used=m.get('models') or [m.get('model')]
-print('basket:', used)
+used=(m.get('models') or [m.get('model')]) + [m.get('verifier')]
+print('reviewer+verifier:', used)
 bad=[x for x in used if x and ('claude' in x.lower() or 'anthropic' in x.lower())]
 sys.exit(1 if bad else 0)
 "
 ```
 
-If it exits non-zero, a Claude model is in the basket: the cross-family property
-is void. **Re-run with the pinned `--models` line before reporting anything.**
-If it still resolves with Claude present, return failure and say so plainly —
-report the basket you got. Never present a Claude-containing run as a
-cross-family review.
+If it exits non-zero, a Claude model is in the loop: the cross-family property
+is void. **Re-run with the pinned `--model` and `--verifier` lines before
+reporting anything.** If it still resolves with Claude present, return failure
+and say so plainly — report the models you got. Never present a
+Claude-containing run as a cross-family review.
 
 ### Known limitation — state it in every report
 
