@@ -18,7 +18,7 @@ Dispatched when the user has approved a plan and said "ship it", "go ahead", "im
 
 External-review ladder:
 
-1. **Primary:** dispatch the `pr-review` subagent — runs `agent-tool-pr-reviewer review` with the pinned Claude-free basket (GPT-5.3 Codex + Gemini 3.1 Pro + Kimi K2.6 consensus, ≥2-model agreement) — a second pair of eyes from different model families
+1. **Primary:** dispatch the `pr-review` subagent — runs `agent-tool-pr-reviewer review` with a single Claude-free model (Kimi K3) — a second pair of eyes from a different model family than Claude
 2. **Fallback:** `/code-review` plugin from `claude-plugins-official` (5 parallel Claude agents — Claude-only, no cross-family perspective)
 3. **All unavailable:** stops and asks the user
 

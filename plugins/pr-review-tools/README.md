@@ -31,9 +31,9 @@ Body: [`skills/pr-review/SKILL.md`](skills/pr-review/SKILL.md).
 
 ### `pr-review`
 
-Dispatched by another agent (typically [`ship`](../ship/)) when it needs a deterministic, cross-family PR review without an interactive session. Runs `agent-tool-pr-reviewer review --model openrouter:openai/gpt-5.3-codex --verifier openrouter:google/gemini-3.1-pro-preview` (one pinned strong Claude-free reviewer plus a Gemini verifier pass that only drops unsupported findings — never the CLI's `default` basket, whose membership has silently changed across versions), applies the hedging-word guard / date-FP guard / scope filter, and returns a structured findings summary the parent agent triages.
+Dispatched by another agent (typically [`ship`](../ship/)) when it needs a deterministic PR review without an interactive session. Runs `agent-tool-pr-reviewer review --model openrouter:moonshotai/kimi-k3 --out .pr-review-out` (one dependable Claude-free model — Kimi K3), applies the hedging-word guard / date-FP guard / scope filter, and returns a structured findings summary the parent agent triages. The earlier 3-model consensus basket was removed in CLI 0.6.0 (it kept silently degrading); add `--verifier <a-different-model>` for a cross-family second opinion.
 
-This is the "agent we build" — replaces `opencode run` as `ship`'s fallback reviewer. The explicitly pinned model and deterministic filtering make it more reliable than OpenRouter-routed alternatives that can drift on context-window or rate-limit issues.
+This is the "agent we build" — replaces `opencode run` as `ship`'s fallback reviewer. A single pinned Claude-free model + deterministic filtering makes it stable across runs and independent of the model being reviewed.
 
 Body: [`agents/pr-review.md`](agents/pr-review.md).
 
@@ -54,7 +54,7 @@ The skill and agent both depend on the CLI being installed separately:
 uv tool install --editable D:/agent-tool-pr-reviewer
 ```
 
-The agent additionally requires `OPENROUTER_API_KEY` for the reviewer and verifier models (in env, or at `~/.config/agent-tool-pr-reviewer/env` mode 600 — note the CLI does not auto-source that file; the agent sources it explicitly).
+The agent additionally requires `OPENROUTER_API_KEY` for the default Kimi K3 model (in env, or at `~/.config/agent-tool-pr-reviewer/env` mode 600 — note the CLI does not auto-source that file; the agent sources it explicitly).
 
 ## See also
 

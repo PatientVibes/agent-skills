@@ -59,5 +59,5 @@ Run an AI-driven review on the current branch's diff against its base ref via th
 - v1 reviews the LOCAL branch's diff against its base ref (auto-detected: `origin/HEAD` → `main` → `master`). GitHub PR mode is deferred.
 - Only two finding categories: `bug` (logic/correctness defects) and `project_rule` (`.ai-review/` violations).
 - Security findings are intentionally out of scope here — use `/security-review` for that.
-- The reviewer requires a model API key. By default it uses `anthropic:claude-sonnet-4-6` and reads `ANTHROPIC_API_KEY` from the environment. Other providers can be selected with `--model` (any Pydantic AI model string).
+- The reviewer runs a single model — Kimi K3 (`openrouter:moonshotai/kimi-k3`) by default — and needs `OPENROUTER_API_KEY` in the environment. Any other model can be selected with `--model` (any Pydantic AI model string); a `--model anthropic:…` needs `ANTHROPIC_API_KEY` instead.
 - **Calibration note (added 2026-05-08):** in early trial data, `bug`-category findings had a higher false-positive rate than `project_rule` findings — particularly when they made claims about external tools (CLI flag validity, library defaults) or inferred patterns from asymmetry. Surface the `evidence` quote verbatim and prefer the user verify before acting on bug findings.

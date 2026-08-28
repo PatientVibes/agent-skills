@@ -74,7 +74,7 @@ Agent({
 })
 ```
 
-The `pr-review` subagent runs `agent-tool-pr-reviewer review --model openrouter:openai/gpt-5.3-codex --verifier openrouter:google/gemini-3.1-pro-preview` — one pinned strong Claude-free reviewer (never the CLI's `default` basket, which has silently changed membership before) with a Gemini verifier pass that only drops unsupported findings — then applies the hedging-word guard, date-FP guard, and scope filter, and returns a structured summary. It does NOT decide what to fix or merge — that's still your job.
+The `pr-review` subagent runs `agent-tool-pr-reviewer review --model openrouter:moonshotai/kimi-k3` — one dependable Claude-free model (Kimi K3, also the CLI's default as of 0.6.0) — then applies the hedging-word guard, date-FP guard, and scope filter, and returns a structured summary. The multi-model consensus basket was removed in CLI 0.6.0. It does NOT decide what to fix or merge — that's still your job.
 
 **6c. If the subagent returns failure** (missing CLI, `OPENROUTER_API_KEY` unset, or a malformed run), fall through to the `/code-review` plugin (see "Reviewer fallback" below). Do NOT silently skip the review step.
 
@@ -174,7 +174,6 @@ The `pr-review` subagent (from the `pr-review-tools` plugin) is the supported ex
 
 - `agent-tool-pr-reviewer review --base master` — review against master (some repos' convention)
 - `agent-tool-pr-reviewer review --base main` — most repos
-- `--model openrouter:openai/gpt-5.3-codex --verifier openrouter:google/gemini-3.1-pro-preview` — the standing pinned Claude-free configuration (see the pr-review agent doc)
-- Do NOT use `--models default` or `--verifier default`: both resolve to Claude-containing defaults since CLI v0.5.3, and the built-in basket has silently changed membership across versions. Pin models explicitly.
+- `--model openrouter:moonshotai/kimi-k3` — the single Claude-free reviewer (also the CLI default as of 0.6.0; see the pr-review agent doc). Add `--verifier <a-different-model>` only if you want a cross-family second-opinion pass.
 
 The CLI reads `OPENROUTER_API_KEY` from the environment but does **not** auto-source `~/.config/agent-tool-pr-reviewer/env` — source it first if the key is unset. Prefer dispatching the `pr-review` subagent (step 6b) over calling the CLI directly, so its filtering + structured summary apply.

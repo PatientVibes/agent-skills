@@ -1,16 +1,16 @@
 ---
 name: pr-review
-description: Code-reviews the current branch's diff via the `agent-tool-pr-reviewer` CLI (one pinned strong Claude-free reviewer — GPT-5.3 Codex — plus a pinned Gemini verifier pass that drops unsupported findings). Use as the external-reviewer leg when codex is unavailable, or any time another agent needs a deterministic cross-family PR review without an interactive session. Returns a structured findings summary (blocker / high / medium / low counts + verbatim evidence for blockers/highs) for the parent agent to triage.
+description: Code-reviews the current branch's diff via the `agent-tool-pr-reviewer` CLI (single Claude-free model — Kimi K3). Use as the external-reviewer leg when codex is unavailable, or any time another agent needs a deterministic, non-interactive PR review independent of Claude. Returns a structured findings summary (blocker / high / medium / low counts + verbatim evidence for blockers/highs) for the parent agent to triage.
 tools: Bash, Read
 ---
 
-# pr-review — deterministic cross-family PR review subagent
+# pr-review — deterministic PR review subagent (Claude-free)
 
 Run an AI-driven PR review on the current branch's diff against its base ref via the `agent-tool-pr-reviewer` CLI, then return a structured summary the parent agent can triage.
 
-This subagent is the "agent we build" half of the cross-family reviewer pattern — it provides a deterministic, non-interactive alternative to running `codex review` or shelling out to `opencode run`. It pins one strong Claude-free code-review model (GPT-5.3 Codex — same family as the primary codex reviewer, so finding style stays consistent) plus a pinned Gemini verifier pass, and applies its own filtering (date-FP guard, hedging-word guard, scope filter) so the output is stable across runs and reviews stay independent of the model doing the work.
+This subagent is the "agent we build" half of the external-reviewer pattern — a deterministic, non-interactive alternative to `codex review` or shelling out to `opencode run`. It runs one dependable Claude-free model (Kimi K3, `openrouter:moonshotai/kimi-k3`) plus deterministic filtering (date-FP guard, hedging-word guard, scope filter), so the output is stable across runs and the review stays independent of Claude — the model doing the work is never the model being reviewed.
 
-> History: this agent originally ran `--models default` (3-model consensus). CLI v0.5.3 silently re-pointed that basket to include Claude Opus 4.7, so the basket was pinned Claude-free (2026-07-02: GPT-5.3 Codex + Gemini 3.1 Pro + Kimi K2.6), then simplified to one strong reviewer + verifier (2026-07-21). Never rely on the CLI's `default` — pin models explicitly.
+> History: this agent originally ran `--models default` (3-model consensus). That basket kept silently changing membership across CLI versions — at one point it re-pointed to include Claude Opus 4.7 — so it was pinned to explicit Claude-free models, and then in **CLI 0.6.0 the multi-model machinery was removed entirely**: the tool is now single-model with a stable Kimi K3 default. There is no `--models`/`--consensus` flag any more.
 
 ## Preconditions
 
@@ -25,41 +25,32 @@ From the repo root:
 ```bash
 [ -n "$OPENROUTER_API_KEY" ] || { set -a; . ~/.config/agent-tool-pr-reviewer/env; set +a; }
 agent-tool-pr-reviewer review \
-  --model openrouter:openai/gpt-5.3-codex \
-  --verifier openrouter:google/gemini-3.1-pro-preview \
+  --model openrouter:moonshotai/kimi-k3 \
   --out .pr-review-out
 ```
 
-- The env-file sourcing line is required: the CLI does **not** auto-source `~/.config/agent-tool-pr-reviewer/env` (observed exit-2 `ModelResolutionError` on 2026-07-21 when the key wasn't already exported).
-- `--model openrouter:openai/gpt-5.3-codex` pins the single strong reviewer, **no Claude in the loop** — reviews stay independent of the model doing the work. Do NOT use `--models default`: since CLI v0.5.3 (June 2026) the curated default includes Claude Opus 4.7, which is not Claude-free and costs more.
-- `--verifier openrouter:google/gemini-3.1-pro-preview` replaces the noise filter that ≥2-model consensus used to provide: it only ever *drops* findings whose evidence isn't verbatim in the diff or that it judges speculative — it cannot add findings. Do NOT use `--verifier default`: it expands to a Claude model, voiding the Claude-free property.
+- The env-file sourcing line is required: the CLI does **not** auto-source `~/.config/agent-tool-pr-reviewer/env` (observed exit-2 `ModelResolutionError` when the key wasn't already exported).
+- `--model openrouter:moonshotai/kimi-k3` pins the single Claude-free reviewer. It is also the CLI's default as of 0.6.0, so a bare `review` resolves the same model — but pin it explicitly so a future default change can't silently swap it.
 - `--out .pr-review-out` writes artifacts to a stable path the parent agent can read.
-- **Copy the `--model` and `--verifier` lines verbatim.** Do not substitute `--models default`, and do not omit `--model` (omitting it selects the curated Claude-containing default — observed 2026-07-15 on two consecutive dispatches, so "cross-family review" meant Claude reviewing its own diff). The step below exists to catch exactly that.
+- Optional: add `--verifier <a-different-model>` for a genuine cross-family second-opinion pass (it only ever *drops* findings — evidence not verbatim in the diff, or judged speculative — it never adds any). Skip it for a plain single-model review.
 
-### Verify the models before reporting — MANDATORY
+### Confirm the model before reporting
 
-The pinned Claude-free reviewer is the whole point of this subagent, and a
-dropped `--model` flag fails **silently** (the run succeeds and returns
-findings; only the model differs). So do not trust that you passed it — check
-the run's own record:
+The reviewer is Claude-free by design. A dropped `--model` still resolves to the K3 default (also Claude-free), so this is a light check rather than a hard gate — but confirm the run used the model you meant, since the flag fails silently:
 
 ```bash
 python3 -c "
 import json,sys,glob
 f=sorted(glob.glob('.pr-review-out/**/findings.json',recursive=True))[-1]
 m=json.load(open(f))['metadata']
-used=(m.get('models') or [m.get('model')]) + [m.get('verifier')]
-print('reviewer+verifier:', used)
+used=[m.get('model'), m.get('verifier_model')]
+print('model+verifier:', used)
 bad=[x for x in used if x and ('claude' in x.lower() or 'anthropic' in x.lower())]
 sys.exit(1 if bad else 0)
 "
 ```
 
-If it exits non-zero, a Claude model is in the loop: the cross-family property
-is void. **Re-run with the pinned `--model` and `--verifier` lines before
-reporting anything.** If it still resolves with Claude present, return failure
-and say so plainly — report the models you got. Never present a
-Claude-containing run as a cross-family review.
+If it exits non-zero, a Claude model got into the loop (only possible if you passed one via `--model`/`--verifier`): re-run without it, and never present a Claude-containing run as a Claude-independent review.
 
 ### Known limitation — state it in every report
 
@@ -97,7 +88,7 @@ markdown or code-block-heavy files) does not prematurely close the fence.**
 
 `````
 Exit: <code>
-Basket: <metadata.models verbatim>   ← MUST be Claude-free; see "Verify the basket"
+Model: <metadata.model>   ← Claude-free (Kimi K3 by default)
 Evidence strength: diff-only (no repo access) — 0 findings is weak evidence
 Blockers: <count>   ← from findings.json severity == "blocker"
 High:     <count>
@@ -135,4 +126,4 @@ Surface the findings the same way, then ask before applying any suggested fixes 
 
 ## Calibration note
 
-In early trial data, `bug`-category findings had a higher false-positive rate than `project_rule` findings — particularly when claims involved external tooling (CLI flag validity, library defaults) or inferred patterns from asymmetry. Always surface the `evidence` quote verbatim so the parent (or user) can spot factual hallucinations at a glance. The v0.5.3 date-FP guard catches one specific class (Gemini's training-cutoff false flags on 2026 dates) but the broader external-tool-claim class is still on the parent to triage.
+In early trial data, `bug`-category findings had a higher false-positive rate than `project_rule` findings — particularly when claims involved external tooling (CLI flag validity, library defaults) or inferred patterns from asymmetry. Always surface the `evidence` quote verbatim so the parent (or user) can spot factual hallucinations at a glance. The date-FP guard catches one specific class (the model's training-cutoff false flags on future-looking dates) but the broader external-tool-claim class is still on the parent to triage. With one model there is no cross-model corroboration, so this triage matters more, not less.
