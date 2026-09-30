@@ -30,7 +30,8 @@ agent-tool-pr-reviewer review \
 ```
 
 - The env-file sourcing line is required: the CLI does **not** auto-source `~/.config/agent-tool-pr-reviewer/env` (observed exit-2 `ModelResolutionError` when the key wasn't already exported).
-- `--model openrouter:moonshotai/kimi-k3` pins the single Claude-free reviewer. It is also the CLI's default as of 0.6.0, so a bare `review` resolves the same model — but pin it explicitly so a future default change can't silently swap it.
+- **Model override:** if the parent names a Claude-free model (e.g. `ship` asks for `openrouter:z-ai/glm-5.3`), use that model in place of Kimi K3, and report the model the run actually used (the confirm step below). Refuse a Claude model.
+- `--model openrouter:moonshotai/kimi-k3` pins the default single Claude-free reviewer. It is also the CLI's default as of 0.6.0, so a bare `review` resolves the same model — but pin it explicitly so a future default change can't silently swap it.
 - `--out .pr-review-out` writes artifacts to a stable path the parent agent can read.
 - Optional: add `--verifier <a-different-model>` for a genuine cross-family second-opinion pass (it only ever *drops* findings — evidence not verbatim in the diff, or judged speculative — it never adds any). Skip it for a plain single-model review.
 
@@ -60,10 +61,10 @@ real, that a claim matches the surrounding code, or that a related call site was
 missed — the questions that matter most on large or translation-heavy
 codebases. Treat a 0-findings result as **weak evidence, not a clean bill of
 health**, and say so in the summary. When the change is load-bearing, recommend
-the parent also run a reviewer with repo access: `opencode run --agent review
-... </dev/null` (GLM 5.3, read-only; see the ship plugin README). The opencode
-"hangs" seen earlier were `opencode run` waiting on an open stdin, so always
-redirect it from `/dev/null`.
+the parent also run a reviewer with repo access, if it hasn't already tried
+one: the read-only opencode `review` agent (GLM 5.3), as set out in step 6b of
+the ship agent. The opencode "hangs" seen earlier were `opencode run` waiting
+on an open stdin, so always redirect it from `/dev/null`.
 
 Capture the exit code:
 

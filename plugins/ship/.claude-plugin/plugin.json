@@ -1,6 +1,6 @@
 {
   "name": "ship",
-  "description": "Subagent driving an approved change from branch \u2192 PR \u2192 external review \u2192 merge in one autonomous flow. External review is GLM 5.3 through a read-only opencode `review` agent with repo access, with each finding verified against the code; falls back to the `pr-review` subagent pinned to GLM 5.3, then the `/code-review` plugin.",
+  "description": "Subagent driving an approved change from branch → PR → external review → merge in one autonomous flow. External review is GLM 5.3 through a read-only opencode `review` agent with repo access, with each finding verified against the code; falls back to the `pr-review` subagent pinned to GLM 5.3, then the `/code-review` plugin.",
   "author": {
     "name": "Chris Moore",
     "email": "chris.paul.moore@gmail.com"

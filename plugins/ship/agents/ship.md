@@ -17,7 +17,13 @@ This agent exists because Claude reviewing its own code is a weak signal — a d
 - A plan has been approved by the user. If you're not sure, ASK — don't assume.
 - Working tree is clean (`git status` shows no uncommitted changes). If dirty, ask the user how to handle.
 - You are on the repo's main branch (typically `main` or `master`). If not, ask before branching elsewhere.
-- The opencode `review` agent exists: `grep -q '"review"' ~/.config/opencode/opencode.json`. It must be the locked-down GLM 5.3 agent from this plugin's README (no write/edit/bash/task tools). If it's missing, use the fallbacks under "Reviewer fallback"; if all fail, see "All reviewers unavailable" below.
+- The opencode `review` agent exists and is the locked-down GLM 5.3 agent from this plugin's README:
+  ```bash
+  command -v opencode >/dev/null && jq -e '.agent.review | .model == "openrouter/z-ai/glm-5.3"
+    and .tools.write == false and .tools.edit == false and .tools.bash == false and .tools.task == false
+    and .permission.external_directory == "deny"' ~/.config/opencode/opencode.json >/dev/null
+  ```
+  If this fails, never run a `review` agent that isn't locked down. Use the fallbacks under "Reviewer fallback", and say in the final report that the primary reviewer isn't set up. If all of them fail, see "All reviewers unavailable" below.
 - `gh` CLI is authenticated (`gh auth status`). Required for PR creation/merge.
 
 ## Flow
@@ -66,23 +72,30 @@ Capture the PR URL.
 
 If skipped, proceed straight to step 9 (CI green) — note the skip reason in the final report.
 
-**6b. Run the review** from the repo root, on the PR branch, with a clean tree:
+**6b. Run the review** from the repo root, on the PR branch, with a clean tree. The `review` agent can't run commands, so it can't produce the diff itself: write the diff to a temp file and attach it.
 
 ```bash
 OUT=$(mktemp -d)
+git diff <main-branch>...HEAD >"$OUT/pr.diff"
 timeout 1800 opencode run --agent review "$(cat <<'EOF'
-You are reviewing the diff <main-branch>..HEAD in this repository. Run no commands and change no files: read, grep and list only.
-Read the repo's AGENTS.md / CLAUDE.md first; their hard rules are review criteria.
+You are reviewing a pull request. The attached pr.diff is the complete diff (<main-branch>...HEAD); the repository at
+HEAD is your working directory. Run no commands and change no files: read, grep and list only, inside the working
+directory (anything outside it is denied; don't retry it).
+Read the repo's AGENTS.md / CLAUDE.md first, if present; their hard rules are review criteria.
 For every candidate finding, open the code it depends on (call sites, callers, config, tests) and keep it only if the
-current code confirms it. Ignore generated files (<list generated paths, e.g. schema/fixtures/**, dist/**>).
-Write a markdown report: sections ## Blocker, ## High, ## Medium, ## Low (omit empty ones), then ## Looks solid.
-Each finding: **ID. title.** `file:line` — the defect, a concrete failure scenario, and the fix. No hedged findings.
+current code confirms it.<GENERATED>
+Your final message must be the report: sections ## Blocker, ## High, ## Medium, ## Low (omit empty ones), then
+## Looks solid. Each finding: **ID. title.** `file:line` — the defect, a concrete failure scenario, and the fix.
+No hedged findings.
 EOF
-)" </dev/null >"$OUT/review.md" 2>"$OUT/review.err"; echo $? >"$OUT/review.exit"
+)" --file "$OUT/pr.diff" </dev/null >"$OUT/review.md" 2>"$OUT/review.err"; echo $? >"$OUT/review.exit"
 ```
 
+- Replace `<GENERATED>` with ` Ignore these generated paths: <paths>.` only if the repo has generated or vendored files checked in (its AGENTS.md or `.gitattributes` usually names them). Otherwise delete it.
+- Put `--file` **after** the message. It takes a list, so written before the message it would swallow the message as a second file.
 - **`</dev/null` is mandatory.** `opencode run` with an open stdin waits on it forever. That is the "opencode hangs" seen in earlier trials, not the model.
-- A big PR stack: review one PR range per run (`<base>..<head>`), not the whole stack at once.
+- A permission the agent config leaves at "ask" is auto-rejected in `opencode run`, and that **ends the session with no report**. That's why the `review` agent denies `external_directory` outright: a denial comes back to the model as an error and the run carries on.
+- A big PR stack: review one PR range per run (`<base>...<head>`), not the whole stack at once.
 - The model comes from the `review` agent (`openrouter/z-ai/glm-5.3`). Never swap it with `-m` without the user's say-so.
 
 **6c. Check the run produced a report.** Treat these as a failed run:
@@ -155,8 +168,8 @@ End with one short line: what merged, the PR URL, and any deferred items (e.g. "
 - **Bypass branch protection** with admin overrides. If the merge is blocked, that's a signal, not an obstacle.
 - **Use `--no-verify` to skip pre-commit hooks** unless the user has explicitly asked. Hook failures are signal.
 - **Treat reviewer feedback as binding.** The reviewer is a second opinion, not a deciding vote. You read the code; you're responsible for the merged result.
-- **Review with any opencode agent other than `review`,** or with any model other than GLM 5.3, unless the user asks. The other agents can write files and run shell commands.
-- **Present a Claude model's review as the external review.** The external review must be from outside the Claude family.
+- **Review with any opencode agent other than `review`,** or with any model other than GLM 5.3 on the two GLM rungs, unless the user asks. The other opencode agents can write files and run shell commands.
+- **Present a Claude model's review as a cross-family review.** When the ladder has reached the `/code-review` rung, the final report must say the external review was Claude-only and why both GLM rungs failed.
 
 ## Reviewer fallback
 
@@ -183,7 +196,7 @@ Invoke the `/code-review` plugin (from `claude-plugins-official`) against the op
 4. Comments on previous PRs that touched the same files
 5. Code-comment compliance in the modified files
 
-…then surfaces its findings. Run the kept findings through the step 7 triage table, then proceed.
+…then surfaces its findings. Run the kept findings through the step 7 triage table, then proceed, and state in the final report that the review was Claude-only.
 
 This is "better than nothing" but loses the cross-family perspective — Claude reviewing Claude tends to repeat the same blind spots.
 

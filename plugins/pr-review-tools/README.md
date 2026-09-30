@@ -31,7 +31,7 @@ Body: [`skills/pr-review/SKILL.md`](skills/pr-review/SKILL.md).
 
 ### `pr-review`
 
-Dispatched by another agent (typically [`ship`](../ship/)) when it needs a deterministic PR review without an interactive session. Runs `agent-tool-pr-reviewer review --model openrouter:moonshotai/kimi-k3 --out .pr-review-out` (one dependable Claude-free model — Kimi K3), applies the hedging-word guard / date-FP guard / scope filter, and returns a structured findings summary the parent agent triages. The earlier 3-model consensus basket was removed in CLI 0.6.0 (it kept silently degrading); add `--verifier <a-different-model>` for a cross-family second opinion.
+Dispatched by another agent (typically [`ship`](../ship/)) when it needs a deterministic PR review without an interactive session. Runs `agent-tool-pr-reviewer review --model openrouter:moonshotai/kimi-k3 --out .pr-review-out` (one dependable Claude-free model — Kimi K3), applies the hedging-word guard / date-FP guard / scope filter, and returns a structured findings summary the parent agent triages. A parent may name a different Claude-free model (ship's fallback asks for `openrouter:z-ai/glm-5.3`). The earlier 3-model consensus basket was removed in CLI 0.6.0 (it kept silently degrading); add `--verifier <a-different-model>` for a cross-family second opinion.
 
 This is the "agent we build" — replaces `opencode run` as `ship`'s fallback reviewer. A single pinned Claude-free model + deterministic filtering makes it stable across runs and independent of the model being reviewed.
 

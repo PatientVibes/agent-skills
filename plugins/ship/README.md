@@ -39,13 +39,15 @@ Merges only when local gates + CI + external review all pass.
 
 ### The opencode `review` agent (required for the primary reviewer)
 
-Add this to `~/.config/opencode/opencode.json` under `"agent"`. Turning off `task` matters: without it, the agent can hand a write to a general subagent and get around the lock (seen in testing).
+Add this to `~/.config/opencode/opencode.json` under `"agent"`. Two settings are load-bearing, both seen in testing:
+- `task` must be off, or the agent can hand a write to a general subagent and get around the lock.
+- `external_directory` must be `deny`, not left at "ask". In `opencode run`, an "ask" is auto-rejected, and a rejection ends the session with no report.
 
 ```json
 "review": {
   "description": "Read-only code reviewer on GLM 5.3. Used by /ship.",
   "model": "openrouter/z-ai/glm-5.3",
-  "permission": { "edit": "deny", "bash": "deny", "webfetch": "deny", "task": "deny" },
+  "permission": { "edit": "deny", "bash": "deny", "webfetch": "deny", "task": "deny", "external_directory": "deny", "doom_loop": "deny" },
   "tools": { "write": false, "edit": false, "patch": false, "bash": false, "task": false, "webfetch": false }
 }
 ```
