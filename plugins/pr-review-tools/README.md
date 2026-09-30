@@ -11,7 +11,7 @@ This plugin ships **two entry points** that share the same underlying CLI:
 | Entry | When | Loaded as |
 |---|---|---|
 | `pr-review` skill | User asks Claude to review the current branch | `Skill` tool — content loaded inline |
-| `pr-review` agent | Another agent (e.g. `ship`) needs a programmatic, deterministic PR review as a fallback when Codex is unavailable | `Agent` tool — dispatched as an isolated subagent |
+| `pr-review` agent | Another agent (e.g. `ship`) needs a programmatic, deterministic PR review as a fallback when the opencode `review` agent (GLM 5.3) is unavailable or failed | `Agent` tool — dispatched as an isolated subagent |
 
 ## Skills
 
@@ -31,9 +31,9 @@ Body: [`skills/pr-review/SKILL.md`](skills/pr-review/SKILL.md).
 
 ### `pr-review`
 
-Dispatched by another agent (typically [`ship`](../ship/)) when it needs a deterministic PR review without an interactive session. Runs `agent-tool-pr-reviewer review --model openrouter:moonshotai/kimi-k3 --out .pr-review-out` (one dependable Claude-free model — Kimi K3), applies the hedging-word guard / date-FP guard / scope filter, and returns a structured findings summary the parent agent triages. The earlier 3-model consensus basket was removed in CLI 0.6.0 (it kept silently degrading); add `--verifier <a-different-model>` for a cross-family second opinion.
+Dispatched by another agent (typically [`ship`](../ship/)) when it needs a deterministic PR review without an interactive session. Runs `agent-tool-pr-reviewer review --model openrouter:moonshotai/kimi-k3 --out .pr-review-out` (one dependable Claude-free model — Kimi K3), applies the hedging-word guard / date-FP guard / scope filter, and returns a structured findings summary the parent agent triages. A parent may name a different Claude-free model (ship's fallback asks for `openrouter:z-ai/glm-5.3`). The earlier 3-model consensus basket was removed in CLI 0.6.0 (it kept silently degrading); add `--verifier <a-different-model>` for a cross-family second opinion.
 
-This is the "agent we build" — replaces `opencode run` as `ship`'s fallback reviewer. A single pinned Claude-free model + deterministic filtering makes it stable across runs and independent of the model being reviewed.
+This is the "agent we build": `ship`'s diff-only fallback reviewer, after the read-only opencode `review` agent (repo access). A single pinned Claude-free model + deterministic filtering makes it stable across runs and independent of the model being reviewed.
 
 Body: [`agents/pr-review.md`](agents/pr-review.md).
 
@@ -61,4 +61,4 @@ The agent additionally requires `OPENROUTER_API_KEY` for the default Kimi K3 mod
 - CLI: [`D:\agent-tool-pr-reviewer\`](../../../agent-tool-pr-reviewer/)
 - Spec: `D:\ai-agents\docs\superpowers\specs\2026-05-07-agent-tool-pr-reviewer-design.md`
 - Catalog: `D:\ai-agents\README.md`
-- Consumer of the agent: [`ship`](../ship/) — falls back to `pr-review` when Codex is unavailable
+- Consumer of the agent: [`ship`](../ship/) — falls back to `pr-review` (with GLM 5.3) when the opencode `review` agent is unavailable or failed

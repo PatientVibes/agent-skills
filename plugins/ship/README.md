@@ -2,13 +2,13 @@
 
 Autonomous branch → PR → external review → merge subagent. Plugin in the `patientvibes-skills` marketplace.
 
-## Status: v2
+## Status: v3
 
-Depends on the `pr-review` subagent in [`pr-review-tools`](../pr-review-tools/) as the external reviewer, with the `/code-review` plugin (`claude-plugins-official`) as the fallback. The `pr-review` subagent wraps the [`agent-tool-pr-reviewer`](../../../agent-tool-pr-reviewer/) CLI in multi-model consensus mode (Claude Opus 4.7 + GPT-5.3 Codex + Gemini 3.1 Pro). `gh` must be authenticated.
+The external reviewer is **GLM 5.3** (`z-ai/glm-5.3` on OpenRouter), run through a locked-down, read-only opencode agent named `review` so it can open the code around the diff. `gh` must be authenticated.
 
-> **v2 change:** the `codex` CLI is no longer used (account access removed). The `pr-review` subagent is now the primary external reviewer.
-
-**No opencode / ad-hoc OpenRouter reviewer in any path** — only the pinned `agent-tool-pr-reviewer` basket (via the `pr-review` subagent), whose models, filtering, and consensus are deterministic.
+> **v3 change (2026-09-30):** opencode is back, but only through the read-only `review` agent. In a head-to-head on a large TypeScript PR stack, GLM 5.3 with repo access found two real high-severity bugs that a diff-only review missed; GPT-6 Astra ended with no report. The "opencode hangs" seen earlier was `opencode run` waiting on an open stdin, and `</dev/null` fixes it.
+>
+> **v2 change:** the `codex` CLI is no longer used (account access removed).
 
 ## Agents
 
@@ -18,9 +18,10 @@ Dispatched when the user has approved a plan and said "ship it", "go ahead", "im
 
 External-review ladder:
 
-1. **Primary:** dispatch the `pr-review` subagent — runs `agent-tool-pr-reviewer review` with a single Claude-free model (Kimi K3) — a second pair of eyes from a different model family than Claude
-2. **Fallback:** `/code-review` plugin from `claude-plugins-official` (5 parallel Claude agents — Claude-only, no cross-family perspective)
-3. **All unavailable:** stops and asks the user
+1. **Primary:** `opencode run --agent review` (GLM 5.3, repo access, read-only). Ship then verifies every finding against the code itself.
+2. **Fallback:** the `pr-review` subagent with `--model openrouter:z-ai/glm-5.3` (diff-only, deterministic filtering)
+3. **Fallback:** `/code-review` plugin from `claude-plugins-official` (5 parallel Claude agents — Claude-only, no cross-family perspective)
+4. **All unavailable:** stops and asks the user
 
 Merges only when local gates + CI + external review all pass.
 
@@ -35,6 +36,23 @@ Merges only when local gates + CI + external review all pass.
 /plugin marketplace add D:/agent-skills
 /plugin install ship@patientvibes-skills
 ```
+
+### The opencode `review` agent (required for the primary reviewer)
+
+Add this to `~/.config/opencode/opencode.json` under `"agent"`. Two settings are load-bearing, both seen in testing:
+- `task` must be off, or the agent can hand a write to a general subagent and get around the lock.
+- `external_directory` must be `deny`, not left at "ask". In `opencode run`, an "ask" is auto-rejected, and a rejection ends the session with no report.
+
+```json
+"review": {
+  "description": "Read-only code reviewer on GLM 5.3. Used by /ship.",
+  "model": "openrouter/z-ai/glm-5.3",
+  "permission": { "edit": "deny", "bash": "deny", "webfetch": "deny", "task": "deny", "external_directory": "deny", "doom_loop": "deny" },
+  "tools": { "write": false, "edit": false, "patch": false, "bash": false, "task": false, "webfetch": false }
+}
+```
+
+Smoke test, from a repo: `opencode run --agent review "Read package.json, reply with its name, then try to create zz-probe.txt; report DENIED if you cannot." </dev/null`. It should reply with the name and DENIED, and leave no file behind.
 
 For the fallback path to work, also install:
 ```

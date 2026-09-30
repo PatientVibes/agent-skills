@@ -47,7 +47,7 @@ The marketplace's internal name is `patientvibes-skills` (set in `marketplace.js
 
 | Plugin | Ships | Status | Description | Depends on |
 |---|---|---|---|---|
-| `pr-review-tools` | skill + agent | v1 | `pr-review` skill (user-invoked review) + `pr-review` subagent (programmatic dispatch, used by `ship` as Codex fallback) | [`agent-tool-pr-reviewer`](../agent-tool-pr-reviewer/) + `OPENROUTER_API_KEY` |
+| `pr-review-tools` | skill + agent | v1 | `pr-review` skill (user-invoked review) + `pr-review` subagent (programmatic dispatch, used by `ship` as its GLM 5.3 fallback) | [`agent-tool-pr-reviewer`](../agent-tool-pr-reviewer/) + `OPENROUTER_API_KEY` |
 
 ### agent-collaboration
 
@@ -60,7 +60,7 @@ The marketplace's internal name is `patientvibes-skills` (set in `marketplace.js
 
 | Plugin | Ships | Status | Description | Depends on |
 |---|---|---|---|---|
-| `ship` | agent | v1 | Autonomous branch → PR → external review → merge after plan approval. Codex primary → `pr-review` subagent fallback (no opencode/OpenRouter dependency) | `codex`, `gh`, `pr-review-tools` plugin |
+| `ship` | agent | v3 | Autonomous branch → PR → external review → merge after plan approval. GLM 5.3 via a read-only opencode `review` agent (repo access) → `pr-review` subagent pinned to GLM 5.3 → `/code-review` | `opencode` (with the `review` agent), `gh`, `pr-review-tools` plugin |
 | `repo-documentation-governance` | agent | v1 | Repo doc cleanup + AGENTS/CLAUDE/GEMINI/Copilot consolidation. Nine-phase workflow scaling to the task. Outputs a PR, not a merge | none |
 
 ### knowledge-graph

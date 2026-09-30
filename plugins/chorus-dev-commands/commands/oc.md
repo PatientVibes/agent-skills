@@ -20,8 +20,9 @@ Task: $ARGUMENTS
 
 3. **Run it.** Invoke:
    ```bash
-   opencode run --agent <agent> "<task as a self-contained prompt>"
+   opencode run --agent <agent> "<task as a self-contained prompt>" </dev/null
    ```
+   Keep the `</dev/null`: with an open stdin, `opencode run` waits on it and never finishes.
    Make the prompt self-contained — opencode does not see this conversation. Include any file paths, constraints, or context it needs.
 
 4. **Report back.** Show the user opencode's output and a one-line summary. If opencode wrote files, list which files changed (`git status --short`). Do not do follow-up edits yourself — hand control back so the user can review and decide.
