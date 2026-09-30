@@ -72,7 +72,7 @@
     },
     {
       "name": "ship",
-      "description": "Subagent driving an approved change from branch → PR → external review → merge. Codex primary; falls back to dispatching the `pr-review` subagent (no opencode/OpenRouter dependency). Triggered only after the user has approved a plan and authorized full automation through merge.",
+      "description": "Subagent driving an approved change from branch → PR → external review → merge. External reviewer: GLM 5.3 via a read-only opencode `review` agent (repo access); falls back to the `pr-review` subagent pinned to GLM 5.3, then /code-review. Triggered only after the user has approved a plan and authorized full automation through merge.",
       "author": { "name": "Chris Moore", "email": "chris.paul.moore@gmail.com" },
       "source": "./plugins/ship",
       "category": "automation"

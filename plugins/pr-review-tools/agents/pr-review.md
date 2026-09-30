@@ -60,10 +60,10 @@ real, that a claim matches the surrounding code, or that a related call site was
 missed — the questions that matter most on large or translation-heavy
 codebases. Treat a 0-findings result as **weak evidence, not a clean bill of
 health**, and say so in the summary. When the change is load-bearing, recommend
-the parent also run a reviewer with repo access (`opencode run --agent
-gemini-flash|cheap` is OpenRouter-backed and non-Claude; the reasoning-heavy
-opencode agents — `frontier`, `kimi`, `minimax` — have been observed to hang, so
-prefer the flash lanes).
+the parent also run a reviewer with repo access: `opencode run --agent review
+... </dev/null` (GLM 5.3, read-only; see the ship plugin README). The opencode
+"hangs" seen earlier were `opencode run` waiting on an open stdin, so always
+redirect it from `/dev/null`.
 
 Capture the exit code:
 
