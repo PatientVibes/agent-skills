@@ -401,7 +401,7 @@ step_check_mcp() {
     local opencode_cfg="$HOME/.config/opencode/opencode.json"
     if [ -f "$opencode_cfg" ]; then
         log_ok "opencode config: $opencode_cfg"
-        if command -v jq >/dev/null 2>&1 && jq -e '.agent.review | .model == "openrouter/z-ai/glm-5.3" and .tools.write == false and .tools.task == false and .permission.external_directory == "deny"' "$opencode_cfg" >/dev/null 2>&1; then
+        if command -v jq >/dev/null 2>&1 && jq -e '.agent.review | .model == "openrouter/z-ai/glm-5.3" and .tools.write == false and .tools.edit == false and .tools.patch == false and .tools.bash == false and .tools.task == false and .tools.webfetch == false and .permission.external_directory == "deny"' "$opencode_cfg" >/dev/null 2>&1; then
             log_ok "opencode review agent: GLM 5.3, read-only (/ship primary reviewer)"
         else
             log_warn "no locked-down opencode 'review' agent — /ship falls back to diff-only review; see plugins/ship/README.md"

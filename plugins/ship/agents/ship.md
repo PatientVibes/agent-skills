@@ -20,8 +20,8 @@ This agent exists because Claude reviewing its own code is a weak signal — a d
 - The opencode `review` agent exists and is the locked-down GLM 5.3 agent from this plugin's README:
   ```bash
   command -v opencode >/dev/null && jq -e '.agent.review | .model == "openrouter/z-ai/glm-5.3"
-    and .tools.write == false and .tools.edit == false and .tools.bash == false and .tools.task == false
-    and .permission.external_directory == "deny"' ~/.config/opencode/opencode.json >/dev/null
+    and .tools.write == false and .tools.edit == false and .tools.patch == false and .tools.bash == false
+    and .tools.task == false and .tools.webfetch == false and .permission.external_directory == "deny"' ~/.config/opencode/opencode.json >/dev/null
   ```
   If this fails, never run a `review` agent that isn't locked down. Use the fallbacks under "Reviewer fallback", and say in the final report that the primary reviewer isn't set up. If all of them fail, see "All reviewers unavailable" below.
 - `gh` CLI is authenticated (`gh auth status`). Required for PR creation/merge.

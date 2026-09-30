@@ -47,7 +47,7 @@ The marketplace's internal name is `patientvibes-skills` (set in `marketplace.js
 
 | Plugin | Ships | Status | Description | Depends on |
 |---|---|---|---|---|
-| `pr-review-tools` | skill + agent | v1 | `pr-review` skill (user-invoked review) + `pr-review` subagent (programmatic dispatch, used by `ship` as Codex fallback) | [`agent-tool-pr-reviewer`](../agent-tool-pr-reviewer/) + `OPENROUTER_API_KEY` |
+| `pr-review-tools` | skill + agent | v1 | `pr-review` skill (user-invoked review) + `pr-review` subagent (programmatic dispatch, used by `ship` as its GLM 5.3 fallback) | [`agent-tool-pr-reviewer`](../agent-tool-pr-reviewer/) + `OPENROUTER_API_KEY` |
 
 ### agent-collaboration
 

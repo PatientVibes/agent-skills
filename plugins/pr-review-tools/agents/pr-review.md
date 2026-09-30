@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Code-reviews the current branch's diff via the `agent-tool-pr-reviewer` CLI (single Claude-free model — Kimi K3). Use as the external-reviewer leg when codex is unavailable, or any time another agent needs a deterministic, non-interactive PR review independent of Claude. Returns a structured findings summary (blocker / high / medium / low counts + verbatim evidence for blockers/highs) for the parent agent to triage.
+description: Code-reviews the current branch's diff via the `agent-tool-pr-reviewer` CLI (single Claude-free model — Kimi K3). Use as `ship`'s fallback reviewer when the read-only opencode `review` agent (GLM 5.3) is unavailable or failed, or any time another agent needs a deterministic, non-interactive PR review independent of Claude. Returns a structured findings summary (blocker / high / medium / low counts + verbatim evidence for blockers/highs) for the parent agent to triage.
 tools: Bash, Read
 ---
 
